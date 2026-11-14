@@ -2,7 +2,8 @@ import { dpaymentsGateway } from "./dpayments";
 import { mockGateway } from "./mock";
 import type { PaymentGateway } from "./types";
 
-export const isMockAllowed = () => process.env.NODE_ENV !== "production";
+/** Simulated payments: always in development; in production only on a test site (DEMO_MODE=true). */
+export const isMockAllowed = () => process.env.NODE_ENV !== "production" || process.env.DEMO_MODE === "true";
 
 /** The configured gateway. In production only DPayments is allowed, so a missing setting can't make bookings free. */
 export function gateway(): PaymentGateway {

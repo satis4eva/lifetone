@@ -2,18 +2,19 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { lkr } from "@/lib/money";
 import { applyPaymentResult } from "@/lib/bookings";
+import { isMockAllowed } from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
 
 // Development-only stand-in for the DPayments hosted checkout.
 export default async function MockPay({ searchParams }: { searchParams: { reference?: string } }) {
-  if (process.env.PAYMENT_GATEWAY === "dpayments" || process.env.NODE_ENV === "production") notFound();
+  if (process.env.PAYMENT_GATEWAY === "dpayments" || !isMockAllowed()) notFound();
   const p = await db.payment.findUnique({ where: { reference: searchParams.reference || "" }, include: { booking: true } });
   if (!p) notFound();
 
   async function settle(form: FormData) {
     "use server";
-    if (process.env.PAYMENT_GATEWAY === "dpayments" || process.env.NODE_ENV === "production") return;
+    if (process.env.PAYMENT_GATEWAY === "dpayments" || !isMockAllowed()) return;
     const ref = String(form.get("reference"));
     const ok = form.get("result") === "ok";
     const b = await applyPaymentResult(ref, ok ? "SUCCEEDED" : "FAILED");

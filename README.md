@@ -52,7 +52,15 @@ With `PAYMENT_GATEWAY=mock`, card payments open a test page where you choose suc
 
 Run the pricing tests with `npm test`.
 
-## Deploy to the Hostinger VPS
+## Deploy with Docker (current setup)
+
+`docker-compose.yml` runs PostgreSQL and the app with no public ports. The VPS's existing Caddy proxy (InvoiceFlow project) forwards `lifetone.online` to the `lifetone-web` container over the shared `invoiceflow_default` network. Secrets (`DB_PASSWORD`, `SESSION_SECRET`, `ADMIN_LOGIN_TOKEN`, …) are set as the project's environment variables, never in the repo.
+
+While `DEMO_MODE=true`, card payments are simulated and a banner says so. For real payments set `PAYMENT_GATEWAY=dpayments`, the DPayments keys and `DEMO_MODE=false`.
+
+To redeploy after pushing to `main`, rebuild the project (Hostinger Docker Manager → lifetone → Update, or `docker compose up -d --build`).
+
+## Deploy to the Hostinger VPS (manual alternative)
 
 The app needs Node.js and PostgreSQL, so it runs on the VPS (Ubuntu) rather than shared hosting, which only offers MySQL.
 

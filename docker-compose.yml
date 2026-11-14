@@ -1,0 +1,51 @@
+# Lifetone on the VPS. No public ports: the existing Caddy proxy (InvoiceFlow project)
+# forwards lifetone.online to the "lifetone-web" container over the shared Docker network.
+# Secrets come from the project's environment variables (never commit them).
+services:
+  lifetone-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lifetone
+      POSTGRES_USER: lifetone
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - lifetone-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lifetone -d lifetone"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  lifetone-web:
+    build: https://github.com/satis4eva/lifetone.git#main
+    image: lifetone-web
+    restart: unless-stopped
+    depends_on:
+      lifetone-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://lifetone:${DB_PASSWORD}@lifetone-db:5432/lifetone
+      SESSION_SECRET: ${SESSION_SECRET}
+      DEFAULT_BRAND: lifetone
+      APP_URL: https://lifetone.online
+      PAYMENT_GATEWAY: ${PAYMENT_GATEWAY:-mock}
+      DEMO_MODE: ${DEMO_MODE:-true}
+      DPAYMENTS_API_URL: ${DPAYMENTS_API_URL:-}
+      DPAYMENTS_API_KEY: ${DPAYMENTS_API_KEY:-}
+      DPAYMENTS_WEBHOOK_SECRET: ${DPAYMENTS_WEBHOOK_SECRET:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      PLATFORM_ADMIN_EMAIL: ${PLATFORM_ADMIN_EMAIL}
+      BRAND_ADMIN_EMAIL: ${BRAND_ADMIN_EMAIL}
+      ADMIN_LOGIN_TOKEN: ${ADMIN_LOGIN_TOKEN:-}
+    networks:
+      - default
+      - proxy
+
+networks:
+  proxy:
+    external: true
+    name: invoiceflow_default
+
+volumes:
+  lifetone-db-data:

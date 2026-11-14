@@ -1,6 +1,7 @@
 // Seeds the Lifetone brand, admin accounts and example providers/listings.
 // Run with: npm run db:seed
 import { PrismaClient, ListingType, PriceUnit } from "@prisma/client";
+import { createHash } from "node:crypto";
 
 const db = new PrismaClient();
 const rs = (lkr: number) => lkr * 100; // LKR -> cents
@@ -57,6 +58,16 @@ async function main() {
     await db.update.create({
       data: { brandId: brand.id, audience: "TOURISTS", title: "East coast surf season ends in October", body: "Arugam Bay surf packages run until 31 October. South-coast breaks open from November." },
     });
+  }
+  // First sign-in without email: ADMIN_LOGIN_TOKEN becomes a one-time link for the platform admin,
+  // valid 7 days: https://<domain>/auth/verify?token=<ADMIN_LOGIN_TOKEN>
+  const bootstrap = process.env.ADMIN_LOGIN_TOKEN;
+  if (bootstrap && bootstrap.length >= 32) {
+    const tokenHash = createHash("sha256").update(bootstrap).digest("hex");
+    const admin = await db.user.findFirst({ where: { brandId: null, email: platformEmail } });
+    if (admin && !(await db.loginToken.findUnique({ where: { tokenHash } }))) {
+      await db.loginToken.create({ data: { tokenHash, userId: admin.id, next: "/portal", expiresAt: new Date(Date.now() + 7 * 86_400_000) } });
+    }
   }
   console.log(`Seeded brand ${brand.name}. Admin sign-in: ${ownerEmail}. Platform admin: ${platformEmail}.`);
 }

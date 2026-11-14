@@ -4,6 +4,9 @@ import "./globals.css";
 import { getBrand } from "@/lib/brand";
 import { currentUser } from "@/lib/auth";
 
+// Every page depends on the brand (from the request's domain), so nothing is pre-rendered at build time.
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
   return { title: { default: brand.name, template: `%s · ${brand.name}` }, description: brand.tagline };
@@ -36,6 +39,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </nav>
           </div>
         </header>
+        {process.env.DEMO_MODE === "true" && (
+          <div style={{ background: "var(--warn-soft)", color: "var(--ink)", textAlign: "center", padding: "6px 16px", fontSize: ".9rem" }}>
+            Test site: card payments are simulated and no money is taken.
+          </div>
+        )}
         <main>{children}</main>
       </body>
     </html>
