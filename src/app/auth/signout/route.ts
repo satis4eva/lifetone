@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
 import { clearSession } from "@/lib/session";
 
-export async function POST(req: Request) {
+// Relative redirect: behind the proxy, req.url is the container's internal address (0.0.0.0:3000),
+// so building an absolute URL from it sent people to the wrong host.
+export async function POST() {
   clearSession();
-  return NextResponse.redirect(new URL("/", req.url), { status: 303 });
+  return new Response(null, { status: 303, headers: { Location: "/" } });
 }
