@@ -1,0 +1,259 @@
+// Lifetone data model.
+// Multi-brand (white-label): every customer-facing record belongs to a Brand,
+// so one deployment can serve Lifetone and future brands on their own domains.
+// Money is stored as integers in minor units (LKR cents) to avoid rounding errors.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Brand {
+  id               String    @id @default(cuid())
+  slug             String    @unique
+  name             String
+  tagline          String    @default("")
+  domains          String[]  // hostnames that serve this brand, e.g. ["lifetone.lk", "www.lifetone.lk"]
+  color            String    @default("#0d6b57")
+  logoUrl          String?
+  bookingPrefix    String    @default("LT")
+  emailFrom        String?   // e.g. "Lifetone Bookings <bookings@lifetone.lk>"
+  commissionPct    Decimal   @default(12) @db.Decimal(5, 2) // taken from providers
+  serviceFeePct    Decimal   @default(3) @db.Decimal(5, 2)  // charged to guests
+  platformFeePct   Decimal   @default(10) @db.Decimal(5, 2) // DBS Group's share of brand revenue
+  allowCash        Boolean   @default(true)
+  depositPct       Int       @default(20)
+  settleCurrency   String    @default("LKR")
+  createdAt        DateTime  @default(now())
+
+  users     User[]
+  providers Provider[]
+  listings  Listing[]
+  bookings  Booking[]
+  emails    Email[]
+  updates   Update[]
+}
+
+enum Role {
+  GUEST
+  PROVIDER
+  BRAND_ADMIN
+  PLATFORM_ADMIN
+}
+
+model User {
+  id        String   @id @default(cuid())
+  brandId   String?  // null only for PLATFORM_ADMIN
+  brand     Brand?   @relation(fields: [brandId], references: [id])
+  email     String
+  name      String   @default("")
+  phone     String?
+  role      Role     @default(GUEST)
+  createdAt DateTime @default(now())
+
+  bookings    Booking[]
+  provider    Provider?
+  loginTokens LoginToken[]
+
+  @@unique([brandId, email])
+}
+
+model LoginToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  next      String    @default("/bookings")
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+enum ListingType {
+  STAY
+  DRIVER
+  TRANSPORT
+  GUIDE
+  SHARE
+  PACKAGE
+}
+
+enum ProviderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Provider {
+  id         String         @id @default(cuid())
+  brandId    String
+  brand      Brand          @relation(fields: [brandId], references: [id])
+  userId     String?        @unique
+  user       User?          @relation(fields: [userId], references: [id])
+  business   String
+  type       ListingType
+  licenceNo  String         // SLTDA licence or NTC route permit
+  phone      String
+  email      String
+  status     ProviderStatus @default(PENDING)
+  documentUrl String?
+  createdAt  DateTime       @default(now())
+
+  listings Listing[]
+}
+
+enum ListingStatus {
+  PENDING
+  LIVE
+  PAUSED
+  REJECTED
+}
+
+enum PriceUnit {
+  NIGHT
+  DAY
+  PERSON
+  SEAT
+  WEEK
+}
+
+model Listing {
+  id          String        @id @default(cuid())
+  brandId     String
+  brand       Brand         @relation(fields: [brandId], references: [id])
+  providerId  String
+  provider    Provider      @relation(fields: [providerId], references: [id])
+  type        ListingType
+  title       String
+  place       String
+  description String
+  price       Int           // LKR cents per unit
+  unit        PriceUnit
+  needsConfirmation Boolean @default(false) // packages and charters: provider confirms first
+  status      ListingStatus @default(PENDING)
+  rating      Decimal       @default(0) @db.Decimal(2, 1)
+  reviewCount Int           @default(0)
+  createdAt   DateTime      @default(now())
+
+  bookings Booking[]
+
+  @@index([brandId, status, type])
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  REQUESTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  DECLINED
+}
+
+enum PayMethod {
+  CARD
+  DEPOSIT
+  CASH
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  ref         String        @unique // e.g. LT-1042
+  brandId     String
+  brand       Brand         @relation(fields: [brandId], references: [id])
+  listingId   String
+  listing     Listing       @relation(fields: [listingId], references: [id])
+  guestId     String
+  guest       User          @relation(fields: [guestId], references: [id])
+  startDate   DateTime      @db.Date
+  quantity    Int           // nights, days, seats, people or weeks
+  guests      Int           @default(1)
+  subtotal    Int           // LKR cents
+  serviceFee  Int
+  total       Int
+  payMethod   PayMethod
+  onlineAmount Int          // charged through the gateway
+  cashAmount  Int           // paid to the provider on the day
+  status      BookingStatus
+  changeRequestDate DateTime? @db.Date
+  // Snapshot of the rates at booking time, so later setting changes don't alter past splits
+  commissionPct  Decimal    @db.Decimal(5, 2)
+  platformFeePct Decimal    @db.Decimal(5, 2)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  payments Payment[]
+  messages Message[]
+
+  @@index([brandId, status])
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id         String        @id @default(cuid())
+  bookingId  String
+  booking    Booking       @relation(fields: [bookingId], references: [id])
+  gateway    String        // "mock" | "dpayments"
+  reference  String        @unique // gateway's transaction id
+  amount     Int           // LKR cents
+  currency   String        @default("LKR")
+  status     PaymentStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+enum Sender {
+  GUEST
+  PROVIDER
+  BRAND
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  sender    Sender
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model Email {
+  id        String   @id @default(cuid())
+  brandId   String
+  brand     Brand    @relation(fields: [brandId], references: [id])
+  to        String
+  subject   String
+  body      String   // plain text
+  bookingRef String?
+  status    String   @default("logged") // "logged" | "sent" | "failed"
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([brandId, createdAt])
+}
+
+enum Audience {
+  TOURISTS
+  PROVIDERS
+  DRIVERS_TRANSPORT
+  AGENCIES
+}
+
+model Update {
+  id        String   @id @default(cuid())
+  brandId   String
+  brand     Brand    @relation(fields: [brandId], references: [id])
+  audience  Audience
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+}
