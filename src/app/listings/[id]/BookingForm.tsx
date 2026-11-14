@@ -6,7 +6,7 @@ import { quote, unitsBetween, type PayMethod } from "@/lib/pricing";
 import { createBooking } from "@/app/actions/booking";
 
 // Client-side copies of labels (avoids importing server-only modules).
-const UNITS: Record<PriceUnit, string> = { NIGHT: "nights", DAY: "days", PERSON: "people", SEAT: "seats", WEEK: "weeks" };
+const UNITS: Record<PriceUnit, string> = { NIGHT: "nights", DAY: "days", PERSON: "people", SEAT: "seats", WEEK: "weeks", SESSION: "sessions" };
 const rs = (c: number) => "Rs " + Math.round(c / 100).toLocaleString("en-GB");
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 

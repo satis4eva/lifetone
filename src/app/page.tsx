@@ -8,7 +8,7 @@ import ListingArt from "@/components/ListingArt";
 
 export const dynamic = "force-dynamic";
 
-const SHORT: Record<ListingType, string> = { STAY: "Stay", DRIVER: "Driver", TRANSPORT: "Transport", GUIDE: "Guide", SHARE: "Room share", PACKAGE: "Package" };
+const SHORT: Record<ListingType, string> = { STAY: "Stay", DRIVER: "Driver", TRANSPORT: "Transport", GUIDE: "Guide", SHARE: "Room share", PACKAGE: "Package", WELLNESS: "Spa" };
 
 const DESTINATIONS: Array<{ name: string; note: string; svg: string }> = [
   { name: "Galle", note: "Fort stays and beaches", svg: '<rect width="200" height="150" fill="#0e8f86"/><circle cx="160" cy="34" r="20" fill="#ffc145"/><path d="M0 95c40-12 80-12 120 0s60 10 80 4v51H0z" fill="#13b5a6"/><path d="M0 118c50-10 100-10 200 2v30H0z" fill="#ffe2b8"/>' },
@@ -44,7 +44,7 @@ export default async function Explore({ searchParams }: { searchParams: { q?: st
       <section className="hero">
         <div className="hero-in">
           <h1>Your island escape, booked with locals</h1>
-          <p>Beach stays, tea-country bungalows, drivers, guides, transport and surf weeks from licensed Sri Lankan providers.</p>
+          <p>Beach stays, tea-country bungalows, drivers, guides, transport, surf weeks and Ayurveda spas from licensed Sri Lankan providers.</p>
           <form className="search" role="search" action="/#results">
             <label htmlFor="q">Where<input id="q" name="q" defaultValue={q} placeholder="Galle, Ella, Arugam Bay…" /></label>
             <label htmlFor="type">What<select id="type" name="type" defaultValue={type ?? ""}>

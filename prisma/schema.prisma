@@ -80,6 +80,7 @@ enum ListingType {
   GUIDE
   SHARE
   PACKAGE
+  WELLNESS
 }
 
 enum ProviderStatus {
@@ -119,6 +120,7 @@ enum PriceUnit {
   PERSON
   SEAT
   WEEK
+  SESSION
 }
 
 model Listing {

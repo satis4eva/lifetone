@@ -17,6 +17,8 @@ const examples: Array<{
   { type: "TRANSPORT", business: "Lanka Coach Fleet", licence: "SLTDA/TR/0144", title: "Coach hire with driver, 33 seats", place: "Colombo", price: 48000, unit: "DAY", desc: "Whole coach for groups and sports teams. Fuel and driver included up to 250 km a day.", confirm: true },
   { type: "GUIDE", business: "Chaminda W.", licence: "SLTDA National Guide NG-0761", title: "Sigiriya Rock sunrise climb", place: "Sigiriya", price: 7500, unit: "PERSON", desc: "Licensed national guide. 3-hour climb with history of the rock fortress." },
   { type: "SHARE", business: "Ishara M.", licence: "Long-stay rental", title: "Room in shared flat, near Galle Face", place: "Colombo", price: 28000, unit: "WEEK", desc: "Private room in a 3-bedroom flat. Fast Wi-Fi, shared kitchen." },
+  { type: "WELLNESS", business: "Bentota Ayurveda Spa", licence: "SLTDA/AY/0157", title: "Ayurveda massage and herbal steam, 90 min", place: "Bentota", price: 9500, unit: "SESSION", desc: "Traditional Ayurveda full-body oil massage with herbal steam bath, by trained therapists." },
+  { type: "WELLNESS", business: "Ella Yoga House", licence: "SLTDA/WR/0088", title: "Sunrise yoga and meditation, tea-country views", place: "Ella", price: 3500, unit: "SESSION", desc: "Hour-long yoga and guided meditation on an open deck above the tea fields. Mats provided." },
   { type: "PACKAGE", business: "East Coast Surf Co.", licence: "SLTDA/TA/0233", title: "Surf week: stay, lessons, transfers", place: "Arugam Bay", price: 145000, unit: "PERSON", desc: "7 nights, 10 surf lessons, board hire and airport transfers.", confirm: true },
 ];
 
@@ -47,6 +49,18 @@ async function main() {
     update: { role: "BRAND_ADMIN" },
     create: { brandId: brand.id, email: ownerEmail, name: "Lifetone admin", role: "BRAND_ADMIN" },
   });
+
+  // Add example spa and wellness listings to brands created before that category existed.
+  if ((await db.listing.count({ where: { brandId: brand.id } })) > 0 && (await db.listing.count({ where: { brandId: brand.id, type: "WELLNESS" } })) === 0) {
+    for (const e of examples.filter(x => x.type === "WELLNESS")) {
+      const provider = await db.provider.create({
+        data: { brandId: brand.id, business: e.business, type: e.type, licenceNo: e.licence, phone: "+94 70 000 0000", email: `${e.business.toLowerCase().replace(/[^a-z]/g, "")}@example.com`, status: "APPROVED" },
+      });
+      await db.listing.create({
+        data: { brandId: brand.id, providerId: provider.id, type: e.type, title: e.title, place: e.place, description: e.desc, price: rs(e.price), unit: e.unit, status: "LIVE" },
+      });
+    }
+  }
 
   if ((await db.listing.count({ where: { brandId: brand.id } })) === 0) {
     for (const e of examples) {

@@ -7,8 +7,8 @@ import { TYPE_LABEL } from "@/lib/labels";
 
 export const metadata = { title: "List your service" };
 
-const DEFAULT_UNIT: Record<ListingType, PriceUnit> = { STAY: "NIGHT", DRIVER: "DAY", TRANSPORT: "SEAT", GUIDE: "PERSON", SHARE: "WEEK", PACKAGE: "PERSON" };
-const UNITS: PriceUnit[] = ["NIGHT", "DAY", "SEAT", "PERSON", "WEEK"];
+const DEFAULT_UNIT: Record<ListingType, PriceUnit> = { STAY: "NIGHT", DRIVER: "DAY", TRANSPORT: "SEAT", GUIDE: "PERSON", SHARE: "WEEK", PACKAGE: "PERSON", WELLNESS: "SESSION" };
+const UNITS: PriceUnit[] = ["NIGHT", "DAY", "SEAT", "PERSON", "WEEK", "SESSION"];
 
 export default function Join({ searchParams }: { searchParams: { sent?: string; error?: string } }) {
   async function apply(form: FormData) {
@@ -42,7 +42,7 @@ export default function Join({ searchParams }: { searchParams: { sent?: string; 
 
   return (
     <div className="stack" style={{ maxWidth: 820 }}>
-      <div><h1>List your service</h1><p className="muted">Guesthouses, villas, drivers, tuk-tuks, guides, coach and shuttle companies, room shares and tour operators. Free to join; commission only when you get a booking.</p></div>
+      <div><h1>List your service</h1><p className="muted">Guesthouses, villas, drivers, tuk-tuks, guides, coach and shuttle companies, spas and wellness centres, room shares and tour operators. Free to join; commission only when you get a booking.</p></div>
       {searchParams.error && <p className="error">Fill in every field, with a price of at least Rs 100.</p>}
       <form action={apply} className="card form">
         <label>What do you offer?<select name="type">{(Object.keys(TYPE_LABEL) as ListingType[]).map(t => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}</select></label>
@@ -51,9 +51,9 @@ export default function Join({ searchParams }: { searchParams: { sent?: string; 
         <label>Town<input name="place" required placeholder="e.g. Negombo" /></label>
         <label>Price in LKR<input name="price" inputMode="numeric" required placeholder="12,000" /></label>
         <label>Priced per<select name="unit" defaultValue="">
-          <option value="">Usual for this type</option><option value="NIGHT">Night</option><option value="DAY">Day</option><option value="SEAT">Seat</option><option value="PERSON">Person</option><option value="WEEK">Week</option>
+          <option value="">Usual for this type</option><option value="NIGHT">Night</option><option value="DAY">Day</option><option value="SEAT">Seat</option><option value="PERSON">Person</option><option value="WEEK">Week</option><option value="SESSION">Session</option>
         </select></label>
-        <label>Licence or permit number (SLTDA / NTC)<input name="licence" required /></label>
+        <label>Licence or registration number (SLTDA / NTC / Ayurveda)<input name="licence" required /></label>
         <label>Mobile (WhatsApp)<input name="phone" type="tel" required placeholder="+94 7X XXX XXXX" /></label>
         <label>Email<input name="email" type="email" required /></label>
         <label className="full">Description<textarea name="description" rows={3} required placeholder="What guests get, languages, what's included" /></label>
