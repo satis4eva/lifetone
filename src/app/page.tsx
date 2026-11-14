@@ -41,10 +41,10 @@ export default async function Explore({ searchParams }: { searchParams: { q?: st
 
   return (
     <div className="stack" style={{ gap: 28 }}>
-      <section className="hero">
+      <section className="hero" style={brand.heroImageUrl ? { backgroundImage: `linear-gradient(160deg, rgba(0,0,0,.45), rgba(0,0,0,.25)), url("${brand.heroImageUrl}")`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>
         <div className="hero-in">
-          <h1>Your island escape, booked with locals</h1>
-          <p>Beach stays, tea-country bungalows, drivers, guides, transport, surf weeks and Ayurveda spas from licensed Sri Lankan providers.</p>
+          <h1>{brand.heroTitle || "Your island escape, booked with locals"}</h1>
+          <p>{brand.heroText || "Beach stays, tea-country bungalows, drivers, guides, transport, surf weeks and Ayurveda spas from licensed Sri Lankan providers."}</p>
           <form className="search" role="search" action="/#results">
             <label htmlFor="q">Where<input id="q" name="q" defaultValue={q} placeholder="Galle, Ella, Arugam Bay…" /></label>
             <label htmlFor="type">What<select id="type" name="type" defaultValue={type ?? ""}>

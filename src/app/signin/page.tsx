@@ -15,8 +15,8 @@ const LOCK_AFTER = 5, LOCK_MINUTES = 15;
 
 async function findUser(email: string): Promise<User | null> {
   const brand = await getBrand();
-  return (await db.user.findUnique({ where: { brandId_email: { brandId: brand.id, email } } }))
-    ?? (await db.user.findFirst({ where: { brandId: null, email, role: "PLATFORM_ADMIN" } }));
+  const u = await db.user.findUnique({ where: { brandId_email: { brandId: brand.id, email } } });
+  return u && u.role !== "PLATFORM_ADMIN" ? u : null;
 }
 
 type Search = { next?: string; sent?: string; error?: string; mode?: string; email?: string };

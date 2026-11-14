@@ -1,4 +1,8 @@
 import type { Booking, Brand, Listing, User } from "@prisma/client";
+
+/** Who an email is from: a brand, or the platform console (id null). */
+export type Sender = { id: string | null; name: string; emailFrom?: string | null };
+export const PLATFORM_SENDER: Sender = { id: null, name: "DBS Group Platform" };
 import nodemailer from "nodemailer";
 import { db } from "./db";
 import { lkr } from "./money";
@@ -19,17 +23,17 @@ function smtpTransport() {
   }
   return smtp;
 }
-export const emailConfigured = (brand: Brand) => !!smtpTransport() || (!!process.env.RESEND_API_KEY && !!brand.emailFrom);
+export const emailConfigured = (brand: Sender) => !!smtpTransport() || (!!process.env.RESEND_API_KEY && !!brand.emailFrom);
 
 /**
  * Sends an email from the brand and logs it. Uses SMTP when SMTP_* is set, otherwise Resend when
  * RESEND_API_KEY is set and the brand has a verified sender; otherwise only logs it (development).
  */
-export async function sendEmail(brand: Brand, mail: Mail) {
+export async function sendEmail(brand: Sender, mail: Mail) {
   // Sign-in tokens are never stored: the portal shows this log to brand admins.
   const redacted = mail.text.replace(/token=[A-Za-z0-9_-]+/g, "token=[hidden]");
   const record = await db.email.create({
-    data: { brandId: brand.id, to: mail.to, subject: mail.subject, body: redacted, bookingRef: mail.bookingRef },
+    data: { brandId: brand.id ?? null, to: mail.to, subject: mail.subject, body: redacted, bookingRef: mail.bookingRef },
   });
   const transport = smtpTransport();
   if (transport) {

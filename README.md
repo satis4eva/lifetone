@@ -22,8 +22,12 @@ The app is built as a **multi-brand (white-label) platform**. Lifetone is the fi
 - Payouts: split per booking, provider balances (cash bookings recovered from card payouts), settlement currency
 - Guest emails log, customer updates, brand settings
 
-**Platform admin** (`/admin`, DBS Group)
+**Platform console** (only at `platform.dbsgroup.io`, set by `PLATFORM_HOST`; never reachable on brand sites)
 - All brands with booking value, brand revenue and platform fees earned
+- Create brands (name, domains, booking prefix, platform fee, first admin)
+- Per-brand theme: preset (Tropical, Luxury, Minimal), colours, fonts, logo, home page headline, intro and hero photo
+- Switch a brand off; add brand admins
+- Platform admins sign in only here; brand admins only on their brand's site
 
 ## Tech
 

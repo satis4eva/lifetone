@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { getBrand } from "@/lib/brand";
+import { getBrand, isPlatformHost } from "@/lib/brand";
 import { currentUser, safeNext } from "@/lib/auth";
-import { sendEmail } from "@/lib/email";
+import { PLATFORM_SENDER, sendEmail } from "@/lib/email";
 import { hashPassword, passwordProblem, MIN_PASSWORD } from "@/lib/password";
 
 export const metadata = { title: "Password" };
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function PasswordPage({ searchParams }: { searchParams: { next?: string; error?: string; done?: string } }) {
   const user = await currentUser();
   if (!user) redirect("/signin?next=/account/password");
-  const next = safeNext(searchParams.next || (user.role === "GUEST" ? "/bookings" : "/portal"));
+  const next = safeNext(searchParams.next || (user.role === "GUEST" ? "/bookings" : user.role === "PLATFORM_ADMIN" ? "/" : "/portal"));
 
   async function save(form: FormData) {
     "use server";
@@ -23,7 +23,7 @@ export default async function PasswordPage({ searchParams }: { searchParams: { n
     if (problem) redirect("/account/password?" + new URLSearchParams({ next: nxt, error: problem }).toString());
     const hadPassword = !!me.passwordHash;
     await db.user.update({ where: { id: me.id }, data: { passwordHash: await hashPassword(pw), failedLogins: 0, lockedUntil: null } });
-    const brand = await getBrand();
+    const brand = isPlatformHost() ? PLATFORM_SENDER : await getBrand();
     await sendEmail(brand, {
       to: me.email,
       subject: `${brand.name}: your password was ${hadPassword ? "changed" : "set"}`,

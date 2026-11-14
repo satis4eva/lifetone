@@ -1,30 +1,35 @@
 import { redirect } from "next/navigation";
 import { createHash, randomBytes } from "node:crypto";
 import { db } from "./db";
-import { getBrand } from "./brand";
+import { getBrand, isPlatformHost } from "./brand";
 import { sessionUserId } from "./session";
 
 export const hashToken = (t: string) => createHash("sha256").update(t).digest("hex");
 
-/** Signed-in user, only if they belong to this brand (or are the platform admin). */
+/**
+ * Signed-in user for this site. On the platform console only the platform admin counts;
+ * on a brand site only that brand's own users count (the platform admin is never signed in there).
+ */
 export async function currentUser() {
   const uid = sessionUserId();
   if (!uid) return null;
-  const [user, brand] = await Promise.all([db.user.findUnique({ where: { id: uid } }), getBrand()]);
+  const user = await db.user.findUnique({ where: { id: uid } });
   if (!user) return null;
-  if (user.role !== "PLATFORM_ADMIN" && user.brandId !== brand.id) return null;
-  return user;
+  if (isPlatformHost()) return user.role === "PLATFORM_ADMIN" ? user : null;
+  const brand = await getBrand();
+  return user.role !== "PLATFORM_ADMIN" && user.brandId === brand.id ? user : null;
 }
 
 export async function requireBrandAdmin() {
   const user = await currentUser();
-  if (!user || (user.role !== "BRAND_ADMIN" && user.role !== "PLATFORM_ADMIN")) redirect("/signin?next=/portal");
+  if (!user || user.role !== "BRAND_ADMIN") redirect("/signin?next=/portal");
   return user;
 }
 
+/** Only on the platform host: paths there are rewritten, so "/signin" is the console's sign-in. */
 export async function requirePlatformAdmin() {
-  const user = await currentUser();
-  if (!user || user.role !== "PLATFORM_ADMIN") redirect("/signin?next=/admin");
+  const user = isPlatformHost() ? await currentUser() : null;
+  if (!user || user.role !== "PLATFORM_ADMIN") redirect("/signin");
   return user;
 }
 

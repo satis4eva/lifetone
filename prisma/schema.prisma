@@ -18,8 +18,16 @@ model Brand {
   name             String
   tagline          String    @default("")
   domains          String[]  // hostnames that serve this brand, e.g. ["lifetone.lk", "www.lifetone.lk"]
-  color            String    @default("#0d6b57")
+  color            String    @default("#0e8f86") // main colour (header, links)
+  ctaColor         String    @default("#ff6f59") // buttons
+  bgColor          String    @default("#fff8ee") // page background (light mode)
+  fontPair         String    @default("tropical") // tropical | elegant | modern
+  themePreset      String    @default("tropical")
   logoUrl          String?
+  heroTitle        String?
+  heroText         String?
+  heroImageUrl     String?
+  active           Boolean   @default(true)  // false = site shows "temporarily unavailable"
   bookingPrefix    String    @default("LT")
   emailFrom        String?   // e.g. "Lifetone Bookings <bookings@lifetone.lk>"
   commissionPct    Decimal   @default(12) @db.Decimal(5, 2) // taken from providers
@@ -235,8 +243,8 @@ model Message {
 
 model Email {
   id        String   @id @default(cuid())
-  brandId   String
-  brand     Brand    @relation(fields: [brandId], references: [id])
+  brandId   String?  // null for platform emails
+  brand     Brand?   @relation(fields: [brandId], references: [id])
   to        String
   subject   String
   body      String   // plain text
