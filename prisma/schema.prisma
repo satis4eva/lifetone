@@ -290,7 +290,7 @@ enum QuoteStatus {
   CLOSED    // brand closed it without quoting
 }
 
-/** Bespoke request: the guest describes what they need, the brand replies with a price. */
+// Bespoke request: the guest describes what they need, the brand replies with a price.
 model QuoteRequest {
   id          String       @id @default(cuid())
   ref         String       @unique // e.g. LT-Q48213
