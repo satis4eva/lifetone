@@ -4,13 +4,13 @@ import { db } from "@/lib/db";
 import { requirePlatformAdmin } from "@/lib/auth";
 import { FONT_PAIRS, PRESETS } from "@/lib/theme";
 import { COUNTRIES } from "@/lib/country";
-import { addBrandAdmin, saveBrand } from "../../actions";
+import { addBrandAdmin, removeBrandAdmin, resendAdminInvite, saveBrand } from "../../actions";
 
 export const metadata = { title: "Edit brand" };
 
-export default async function EditBrand({ params, searchParams }: { params: { id: string }; searchParams: { saved?: string; created?: string; error?: string } }) {
+export default async function EditBrand({ params, searchParams }: { params: { id: string }; searchParams: { saved?: string; created?: string; error?: string; invited?: string; noinvite?: string } }) {
   await requirePlatformAdmin();
-  const b = await db.brand.findUnique({ where: { id: params.id }, include: { users: { where: { role: "BRAND_ADMIN" }, select: { email: true } }, _count: { select: { listings: true, bookings: true } } } });
+  const b = await db.brand.findUnique({ where: { id: params.id }, include: { users: { where: { role: "BRAND_ADMIN" }, select: { id: true, email: true, passwordHash: true } }, _count: { select: { listings: true, bookings: true } } } });
   if (!b) notFound();
   const site = b.domains.find(d => !d.includes("localhost"));
   return (
@@ -21,6 +21,8 @@ export default async function EditBrand({ params, searchParams }: { params: { id
       </div>
       {searchParams.created && <div className="notice">Brand created. Add a logo and adjust the theme below.</div>}
       {searchParams.saved && <div className="notice">Saved. Changes are live on the brand&apos;s site.</div>}
+      {searchParams.invited && <div className="notice">Invite sent to {searchParams.invited}. The email has a link straight into this brand&apos;s Client portal (valid 7 days).</div>}
+      {searchParams.noinvite && <p className="error" role="alert" style={{ margin: 0 }}>Admin saved, but no invite was sent because this brand has no web address yet. Add its domain below, save, then press &quot;Send invite&quot;.</p>}
       {searchParams.error && <p className="error" role="alert" style={{ margin: 0 }}>{searchParams.error}</p>}
 
       <form action={saveBrand} className="card form">
@@ -70,13 +72,28 @@ export default async function EditBrand({ params, searchParams }: { params: { id
         <div className="full"><button className="btn" type="submit">Save changes</button></div>
       </form>
 
-      <form action={addBrandAdmin} className="card stack">
+      <div className="card stack">
         <h2>Brand admins</h2>
-        <p className="muted" style={{ margin: 0 }}>They sign in at {site ? `https://${site}/signin` : "the brand's site"} and see only this brand&apos;s Client portal.</p>
-        <ul style={{ margin: 0 }}>{b.users.map(u => <li key={u.email}>{u.email}</li>)}</ul>
-        <input type="hidden" name="id" value={b.id} />
-        <div className="row"><input name="email" type="email" placeholder="new admin email" required /><button className="btn ghost" type="submit">Add admin</button></div>
-      </form>
+        <p className="muted" style={{ margin: 0 }}>
+          Each brand has its own Client portal at {site ? <a href={`https://${site}/portal`} target="_blank" rel="noopener noreferrer">{`https://${site}/portal`}</a> : "its own address /portal"}.
+          Adding an admin emails them an invite link. After that they sign in at {site ? `https://${site}/signin` : "the brand's site"} and see only this brand.
+        </p>
+        {b.users.length === 0 && <p className="muted" style={{ margin: 0 }}>No admins yet.</p>}
+        {b.users.map(u => (
+          <div key={u.id} className="row" style={{ justifyContent: "space-between", borderTop: "1px solid var(--line)", paddingTop: 8 }}>
+            <span>{u.email} <span className={`pill ${u.passwordHash ? "" : "warn"}`}>{u.passwordHash ? "Active" : "Invite not used yet"}</span></span>
+            <span className="row" style={{ gap: 6 }}>
+              <form action={resendAdminInvite}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="userId" value={u.id} /><button className="btn ghost small" type="submit">Send invite</button></form>
+              <form action={removeBrandAdmin}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="userId" value={u.id} /><button className="btn ghost small" type="submit">Remove</button></form>
+            </span>
+          </div>
+        ))}
+        <form action={addBrandAdmin} className="row">
+          <input type="hidden" name="id" value={b.id} />
+          <input name="email" type="email" placeholder="new admin email" required />
+          <button className="btn ghost" type="submit">Add admin and send invite</button>
+        </form>
+      </div>
     </div>
   );
 }

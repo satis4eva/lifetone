@@ -6,6 +6,37 @@ import { requirePlatformAdmin } from "@/lib/auth";
 import { saveImage } from "@/lib/media";
 import { HEX, PRESETS, isPreset, FONT_PAIRS } from "@/lib/theme";
 import { COUNTRIES, isCountry } from "@/lib/country";
+import { createLoginToken } from "@/lib/auth";
+import { sendEmail } from "@/lib/email";
+
+/**
+ * Emails a brand admin a sign-in link (valid 7 days) to their Client portal on the brand's own site.
+ * Returns false when the brand has no web address yet.
+ */
+async function inviteAdmin(brandId: string, userId: string): Promise<boolean> {
+  const brand = await db.brand.findUnique({ where: { id: brandId } });
+  const user = await db.user.findFirst({ where: { id: userId, brandId, role: "BRAND_ADMIN" } });
+  const site = brand?.domains.find(d => d !== "localhost" && !d.endsWith(".localhost"));
+  if (!brand || !user || !site) return false;
+  const next = user.passwordHash ? "/portal" : "/account/password?next=/portal";
+  const token = await createLoginToken(user.id, next, 7 * 24 * 60);
+  await sendEmail(brand, {
+    to: user.email,
+    subject: `${brand.name}: your Client portal is ready`,
+    text: [
+      `Hello,`,
+      ``,
+      `You've been made an admin of ${brand.name}. In the Client portal you manage bookings, quote requests, listings and photos, payouts, monthly reports and your site's settings.`,
+      ``,
+      `Open your portal (this link works once and expires in 7 days${user.passwordHash ? "" : "; you'll choose a password first"}):`,
+      `https://${site}/auth/verify?token=${token}`,
+      ``,
+      `After that, sign in any time at https://${site}/signin with this email address.`,
+    ].join("\n"),
+  });
+  return true;
+}
+
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -27,9 +58,10 @@ export async function createBrand(form: FormData) {
   const brand = await db.brand.create({
     data: { country, currency: COUNTRIES[country].currency, settleCurrency: COUNTRIES[country].currency, name, slug, bookingPrefix: prefix, domains: parseDomains(str(form, "domains")), tagline: str(form, "tagline"), themePreset: preset, color: p.color, ctaColor: p.ctaColor, bgColor: p.bgColor, fontPair: p.fontPair, platformFeePct: Number(str(form, "platformFeePct")) || 10 },
   });
-  await db.user.create({ data: { brandId: brand.id, email: admin, name: `${name} admin`, role: "BRAND_ADMIN" } });
+  const user = await db.user.create({ data: { brandId: brand.id, email: admin, name: `${name} admin`, role: "BRAND_ADMIN" } });
+  const invited = await inviteAdmin(brand.id, user.id);
   revalidatePath("/platform");
-  redirect(`/brands/${brand.id}?created=1`);
+  redirect(`/brands/${brand.id}?created=1${invited ? `&invited=${encodeURIComponent(admin)}` : "&noinvite=1"}`);
 }
 
 export async function saveBrand(form: FormData) {
@@ -78,10 +110,30 @@ export async function addBrandAdmin(form: FormData) {
   await requirePlatformAdmin();
   const brandId = str(form, "id"), email = str(form, "email").toLowerCase();
   if (!EMAIL.test(email)) redirect(`/brands/${brandId}?error=${encodeURIComponent("Enter a valid admin email.")}`);
-  await db.user.upsert({
+  if (!(await db.brand.findUnique({ where: { id: brandId } }))) redirect("/");
+  const user = await db.user.upsert({
     where: { brandId_email: { brandId, email } },
     update: { role: "BRAND_ADMIN" },
     create: { brandId, email, name: "Brand admin", role: "BRAND_ADMIN" },
   });
+  const invited = await inviteAdmin(brandId, user.id);
+  redirect(`/brands/${brandId}?${invited ? `invited=${encodeURIComponent(email)}` : "noinvite=1"}`);
+}
+
+/** Sends the portal invite again, e.g. when the first link expired. */
+export async function resendAdminInvite(form: FormData) {
+  await requirePlatformAdmin();
+  const brandId = str(form, "id");
+  const user = await db.user.findFirst({ where: { id: str(form, "userId"), brandId, role: "BRAND_ADMIN" } });
+  if (!user) redirect(`/brands/${brandId}`);
+  const invited = await inviteAdmin(brandId, user.id);
+  redirect(`/brands/${brandId}?${invited ? `invited=${encodeURIComponent(user.email)}` : "noinvite=1"}`);
+}
+
+/** Takes admin rights away (the person keeps any bookings as a guest). */
+export async function removeBrandAdmin(form: FormData) {
+  await requirePlatformAdmin();
+  const brandId = str(form, "id");
+  await db.user.updateMany({ where: { id: str(form, "userId"), brandId, role: "BRAND_ADMIN" }, data: { role: "GUEST" } });
   redirect(`/brands/${brandId}?saved=1`);
 }
