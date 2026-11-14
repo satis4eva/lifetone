@@ -6,7 +6,7 @@ import { getBrand } from "@/lib/brand";
 import { currentUser } from "@/lib/auth";
 import { moneyFmt } from "@/lib/money";
 import { PAY_LABEL, STATUS_LABEL, UNIT_LABEL, fmtDate } from "@/lib/labels";
-import { cancelBooking, requestDateChange } from "@/lib/bookings";
+import { alertTeam, cancelBooking, requestDateChange } from "@/lib/bookings";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +36,7 @@ export default async function ManageBooking({ params, searchParams }: { params: 
     if (!b || !["PENDING_PAYMENT", "REQUESTED", "CONFIRMED"].includes(b.status)) return;
     if (b.startDate.getTime() - Date.now() <= FREE_CANCEL_HOURS * 3_600_000) return;
     await cancelBooking(brand, b.id, "cancelled");
+    await alertTeam(brand, b.id, "cancelled");
     redirect(`/bookings/${b.ref}?done=cancelled`);
   }
   async function changeDate(form: FormData) {
@@ -48,10 +49,11 @@ export default async function ManageBooking({ params, searchParams }: { params: 
   }
   async function message(form: FormData) {
     "use server";
-    const { b } = await loadMine(params.ref);
+    const { brand, b } = await loadMine(params.ref);
     const body = String(form.get("body") || "").trim().slice(0, 2000);
     if (!b || !body) return;
     await db.message.create({ data: { bookingId: b.id, sender: "GUEST", body } });
+    await alertTeam(brand, b.id, "message", body);
     revalidatePath(`/bookings/${b.ref}`);
   }
 

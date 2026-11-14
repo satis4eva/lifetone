@@ -6,6 +6,9 @@ import { parseRupees } from "@/lib/money";
 import { TYPE_LABEL } from "@/lib/labels";
 import { saveImage } from "@/lib/media";
 import { countryOf } from "@/lib/country";
+import { sendEmail } from "@/lib/email";
+import { baseUrl } from "@/lib/brand";
+import { brandAdminEmails } from "@/lib/bookings";
 
 export const metadata = { title: "List your service" };
 
@@ -43,6 +46,13 @@ export default async function Join({ searchParams }: { searchParams: { sent?: st
         price, unit, needsConfirmation: type === "PACKAGE" || form.get("confirm") === "on",
       },
     });
+    const link = `${await baseUrl()}/portal`;
+    for (const to of await brandAdminEmails(brand.id)) {
+      await sendEmail(brand, {
+        to, subject: `${brand.name}: new provider application from ${s("business")}`,
+        text: `${s("business")} (${TYPE_LABEL[type]}) wants to list "${s("title")}" in ${s("place")}.\nLicence: ${s("licence")} · ${s("phone")} · ${s("email")}\n\nCheck the licence, then approve or reject it in your Client portal: ${link}`,
+      });
+    }
     redirect("/providers/join?sent=1");
   }
 

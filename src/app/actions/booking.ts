@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { baseUrl, getBrand } from "@/lib/brand";
 import { quote, unitsBetween } from "@/lib/pricing";
 import { newBookingRef } from "@/lib/refs";
-import { notify } from "@/lib/bookings";
+import { alertTeam, notify } from "@/lib/bookings";
 import { gateway } from "@/lib/payments";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,6 +59,7 @@ export async function createBooking(_prev: string | null, form: FormData): Promi
 
   if (q.onlineAmount === 0) {
     await notify(brand, booking.id, "requested");
+    await alertTeam(brand, booking.id, "request");
     redirect(`/booked/${ref}`);
   }
 

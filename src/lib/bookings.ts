@@ -2,7 +2,9 @@ import type { Brand } from "@prisma/client";
 import { db } from "./db";
 import { baseUrl } from "./brand";
 import { createLoginToken } from "./auth";
-import { emailGuest, type BookingEvent } from "./email";
+import { emailGuest, sendEmail, type BookingEvent } from "./email";
+import { moneyFmt } from "./money";
+import { PAY_LABEL, UNIT_LABEL, fmtDate } from "./labels";
 import { gateway } from "./payments";
 
 export const withDetails = { listing: true, guest: true } as const;
@@ -52,6 +54,7 @@ export async function applyPaymentResult(reference: string, reported: "SUCCEEDED
     return b;
   }
   await notify(b.brand, b.id, next === "CONFIRMED" ? "booked" : "requested");
+  await alertTeam(b.brand, b.id, next === "CONFIRMED" ? "new" : "request");
   return b;
 }
 
@@ -96,6 +99,7 @@ export async function requestDateChange(brand: Brand, bookingId: string, date: s
   });
   if (ok.count !== 1) return;
   await notify(brand, bookingId, "changeRequested", date);
+  await alertTeam(brand, bookingId, "change", date);
 }
 
 export async function resolveDateChange(brand: Brand, bookingId: string, accept: boolean) {
@@ -106,4 +110,48 @@ export async function resolveDateChange(brand: Brand, bookingId: string, accept:
     data: accept ? { startDate: b.changeRequestDate, changeRequestDate: null } : { changeRequestDate: null },
   });
   await notify(brand, bookingId, accept ? "changeAccepted" : "changeDeclined");
+}
+
+export type TeamEvent = "new" | "request" | "cancelled" | "change" | "message";
+
+/** Emails of the brand's admins. */
+export async function brandAdminEmails(brandId: string) {
+  const admins = await db.user.findMany({ where: { brandId, role: "BRAND_ADMIN" }, select: { email: true } });
+  return admins.map(a => a.email);
+}
+
+/**
+ * Tells the brand's admins, and the provider whose service was booked, about a booking event.
+ * The brand's own fleet has no separate provider email.
+ */
+export async function alertTeam(brand: Brand, bookingId: string, event: TeamEvent, extra = "") {
+  const b = await db.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { guest: true, listing: { include: { provider: true } } } });
+  const fmt = moneyFmt(brand.currency);
+  const u = UNIT_LABEL[b.listing.unit];
+  const title: Record<TeamEvent, string> = {
+    new: `New booking ${b.ref}`, request: `New booking request ${b.ref}: please confirm`, cancelled: `Booking ${b.ref} cancelled by the guest`,
+    change: `Date change requested on ${b.ref}`, message: `Guest message on ${b.ref}`,
+  };
+  const details = [
+    `${b.listing.title}, ${b.listing.place}`,
+    ...(b.note ? [b.note] : []),
+    `Start: ${fmtDate(b.startDate)} · ${b.quantity} ${b.quantity === 1 ? u.one : u.many} · ${b.guests} guest${b.guests === 1 ? "" : "s"}`,
+    `Guest: ${b.guest.name || "(no name)"} <${b.guest.email}>${b.guest.phone ? ` · ${b.guest.phone}` : ""}`,
+    `Total: ${fmt(b.total)} (${PAY_LABEL[b.payMethod]}${b.onlineAmount ? `, ${fmt(b.onlineAmount)} paid online` : ""}${b.cashAmount ? `, ${fmt(b.cashAmount)} cash on the day` : ""})`,
+    ...(event === "change" ? [`Requested new start date: ${extra}`] : []),
+    ...(event === "message" ? [``, `"${extra}"`] : []),
+  ].join("\n");
+  const link = `${await baseUrl()}/portal/bookings/${b.ref}`;
+  const subject = `${brand.name}: ${title[event]}`;
+  for (const to of await brandAdminEmails(brand.id)) {
+    await sendEmail(brand, { to, subject, text: `${details}\n\n${event === "request" || event === "change" ? "Reply" : "Open the booking"} in your Client portal: ${link}`, bookingRef: b.ref });
+  }
+  const p = b.listing.provider;
+  if (p.licenceNo !== "OWN-FLEET" && p.status === "APPROVED" && p.email && event !== "message") {
+    await sendEmail(brand, {
+      to: p.email, subject,
+      text: `Hello ${p.business},\n\n${details}\n\n${event === "request" || event === "change" ? `${brand.name} will confirm with you before replying to the guest.` : `Questions? Reply to this email and ${brand.name} will help.`}`,
+      bookingRef: b.ref,
+    });
+  }
 }
