@@ -35,7 +35,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {isAdmin && <Link href="/portal">Client portal</Link>}
               {user?.role === "PLATFORM_ADMIN" && <Link href="/admin">Platform</Link>}
               {user ? (
-                <form action="/auth/signout" method="post"><button type="submit">Sign out</button></form>
+                <>
+                  <Link href="/account/password">Password</Link>
+                  <form action="/auth/signout" method="post"><button type="submit">Sign out</button></form>
+                </>
               ) : (
                 <Link href="/signin" className="cta-link">Sign in</Link>
               )}

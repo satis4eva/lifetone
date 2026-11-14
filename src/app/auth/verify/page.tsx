@@ -23,8 +23,14 @@ export default async function Verify({ searchParams }: { searchParams: { token?:
       where: { id: r.id, usedAt: null, expiresAt: { gt: new Date() } }, data: { usedAt: new Date() },
     });
     if (used.count !== 1) redirect("/signin?error=link");
-    setSession(r.userId);
-    redirect(safeNext(r.next));
+    setSession(r.userId, 30);
+    const user = await db.user.findUnique({ where: { id: r.userId } });
+    const dest = safeNext(r.next);
+    // First time in: admins choose a password so they don't need an email link every time.
+    if (user && !user.passwordHash && user.role !== "GUEST" && !dest.startsWith("/account/password")) {
+      redirect(`/account/password?next=${encodeURIComponent(dest)}`);
+    }
+    redirect(dest);
   }
 
   if (!valid) redirect("/signin?error=link");

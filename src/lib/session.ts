@@ -3,7 +3,6 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 // Stateless signed cookie: base64url(JSON payload) + "." + HMAC-SHA256 signature.
 const COOKIE = "lt_session";
-const MAX_AGE = 60 * 60 * 24 * 14; // 14 days
 
 interface Payload { uid: string; exp: number }
 
@@ -14,7 +13,9 @@ function secret(): string {
 }
 const sign = (data: string) => createHmac("sha256", secret()).update(data).digest("base64url");
 
-export function setSession(userId: string) {
+/** Signs the user in on this device for the given number of days. */
+export function setSession(userId: string, days = 30) {
+  const MAX_AGE = Math.round(days * 86_400);
   const payload: Payload = { uid: userId, exp: Math.floor(Date.now() / 1000) + MAX_AGE };
   const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
   cookies().set(COOKIE, `${data}.${sign(data)}`, {

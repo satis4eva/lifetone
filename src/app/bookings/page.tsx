@@ -19,6 +19,12 @@ export default async function MyBookings() {
   return (
     <div className="stack">
       <div><h1>My bookings</h1><p className="muted" style={{ margin: "4px 0 0" }}>Signed in as {user.email}</p></div>
+      {!user.passwordHash && (
+        <div className="notice row" style={{ justifyContent: "space-between" }}>
+          <span>Set a password to sign in faster next time, without waiting for an email.</span>
+          <Link className="btn small" href="/account/password?next=/bookings">Set a password</Link>
+        </div>
+      )}
       {bookings.length === 0 && <div className="card muted">No bookings for this email yet. <Link href="/">Explore Sri Lanka</Link></div>}
       {bookings.map(b => (
         <Link key={b.id} href={`/bookings/${b.ref}`} className="card row" style={{ justifyContent: "space-between", color: "inherit", textDecoration: "none" }}>
