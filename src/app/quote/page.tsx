@@ -7,7 +7,7 @@ import QuoteForm from "./QuoteForm";
 export const metadata = { title: "Request a quote" };
 export const dynamic = "force-dynamic";
 
-export default async function RequestQuote({ searchParams }: { searchParams: { listing?: string; type?: string; q?: string; sent?: string } }) {
+export default async function RequestQuote({ searchParams }: { searchParams: { listing?: string; type?: string; q?: string; sent?: string; from?: string; to?: string; start?: string; people?: string } }) {
   const brand = await getBrand();
   if (searchParams.sent) {
     return (
@@ -26,13 +26,19 @@ export default async function RequestQuote({ searchParams }: { searchParams: { l
   return (
     <div className="stack" style={{ maxWidth: 720 }}>
       <div>
-        <h1>Request a quote</h1>
+        <h1>{brand.businessType === "COACH" ? "Get a price for your trip" : "Request a quote"}</h1>
         <p className="muted" style={{ margin: "4px 0 0" }}>Can't find exactly what you need? Tell us about your trip and {brand.name} will come back with a price. No payment until you accept.</p>
       </div>
       <div className="card">
         <QuoteForm
           types={Object.entries(TYPE_LABEL)}
-          defaults={{ type, from: listing?.place ?? searchParams.q, details: listing ? `Something like "${listing.title}", but…` : undefined }}
+          coach={brand.businessType === "COACH"}
+          defaults={{
+            type, from: searchParams.from || listing?.place || searchParams.q, to: searchParams.to,
+            start: /^\d{4}-\d{2}-\d{2}$/.test(searchParams.start || "") ? searchParams.start : undefined,
+            people: parseInt(searchParams.people || "", 10) || undefined,
+            details: listing ? `Something like "${listing.title}", but…` : undefined,
+          }}
           labels={{ from: "Pickup from", to: "Drop-off / destination" }}
         />
       </div>

@@ -17,6 +17,8 @@ export async function createQuoteRequest(_prev: string | null, form: FormData): 
   const type = s("type") in TYPE_LABEL ? (s("type") as ListingType) : null;
   const fromPlace = s("from"), toPlace = s("to"), start = s("start"), end = s("end");
   const people = parseInt(s("people"), 10);
+  const hours = s("hours") ? parseInt(s("hours"), 10) : null;
+  const pickupTime = /^\d{2}:\d{2}$/.test(s("pickupTime")) ? s("pickupTime") : null;
   const today = new Date().toISOString().slice(0, 10);
   if (!name) return "Enter your name.";
   if (!EMAIL.test(email)) return "Enter a valid email address.";
@@ -24,6 +26,7 @@ export async function createQuoteRequest(_prev: string | null, form: FormData): 
   if (!DATE.test(start) || start < today) return "Choose a date from today onwards.";
   if (end && (!DATE.test(end) || end < start)) return "The end date can't be before the start date.";
   if (!Number.isInteger(people) || people < 1 || people > 500) return "Enter how many people (1 to 500).";
+  if (hours !== null && (!Number.isInteger(hours) || hours < 1 || hours > 24)) return "Hours needed should be between 1 and 24.";
 
   let guest = await db.user.findUnique({ where: { brandId_email: { brandId: brand.id, email } } });
   if (!guest) guest = await db.user.create({ data: { brandId: brand.id, email, name, phone: phone || null, role: "GUEST" } });
@@ -36,7 +39,7 @@ export async function createQuoteRequest(_prev: string | null, form: FormData): 
         data: {
           ref: await newQuoteRef(brand.bookingPrefix), brandId: brand.id, guestId: guest.id, type,
           fromPlace, toPlace: toPlace || null, startDate: new Date(start + "T00:00:00Z"), endDate: end ? new Date(end + "T00:00:00Z") : null,
-          returnTrip: form.get("return") === "on", people, budget: s("budget", 80) || null, details: s("details", 3000), phone: phone || null,
+          returnTrip: form.get("return") === "on", people, budget: s("budget", 80) || null, details: s("details", 3000), phone: phone || null, hours, pickupTime,
         },
         include: { guest: true },
       });

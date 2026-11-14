@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { requirePlatformAdmin } from "@/lib/auth";
 import { FONT_PAIRS, PRESETS } from "@/lib/theme";
 import { COUNTRIES } from "@/lib/country";
+import { BUSINESS_TYPES } from "@/lib/coach";
 import { addBrandAdmin, removeBrandAdmin, resendAdminInvite, saveBrand } from "../../actions";
 
 export const metadata = { title: "Edit brand" };
@@ -30,6 +31,7 @@ export default async function EditBrand({ params, searchParams }: { params: { id
         <h1 className="full">{b.name}</h1>
 
         <h2 className="full">Identity</h2>
+        <label>Business type<select name="businessType" defaultValue={b.businessType}>{Object.entries(BUSINESS_TYPES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
         <label>Country<select name="country" defaultValue={b.country}>{Object.entries(COUNTRIES).map(([k, c]) => <option key={k} value={k}>{c.name} ({c.currency})</option>)}</select></label>
         <label>Brand name<input name="name" defaultValue={b.name} required /></label>
         {(b._count.listings > 0 || b._count.bookings > 0) && <p className="muted full" style={{ margin: 0, fontSize: ".9rem" }}>Changing the country also changes the currency ({b.currency} now). Existing prices are not converted, so review every listing price afterwards. This brand has {b._count.listings} listings and {b._count.bookings} bookings.</p>}

@@ -43,6 +43,16 @@ export default async function Explore({ searchParams }: { searchParams: { q?: st
         <div className="hero-in">
           <h1>{brand.heroTitle || country.heroTitle}</h1>
           <p>{brand.heroText || country.heroText}</p>
+          {brand.businessType === "COACH" ? (
+          <form className="search coach" action="/quote">
+            <input type="hidden" name="type" value="TRANSPORT" />
+            <label htmlFor="from">Pickup<input id="from" name="from" required placeholder="Hotel, airport or postcode" /></label>
+            <label htmlFor="to">Drop-off<input id="to" name="to" placeholder="Where to?" /></label>
+            <label htmlFor="start">Date<input id="start" type="date" name="start" min={new Date().toISOString().slice(0, 10)} /></label>
+            <label htmlFor="people">Passengers<input id="people" type="number" name="people" min={1} max={500} defaultValue={20} /></label>
+            <button className="btn" type="submit">Get a price</button>
+          </form>
+          ) : (
           <form className="search" role="search" action="/#results">
             <label htmlFor="q">Where<input id="q" name="q" defaultValue={q} placeholder={country.searchPlaceholder} /></label>
             <label htmlFor="type">What<select id="type" name="type" defaultValue={type ?? ""}>
@@ -51,6 +61,7 @@ export default async function Explore({ searchParams }: { searchParams: { q?: st
             </select></label>
             <button className="btn" type="submit">Search</button>
           </form>
+          )}
           <p style={{ margin: "12px 0 0" }}>Need something bespoke? <Link href="/quote" style={{ color: "inherit", fontWeight: 700, textDecoration: "underline" }}>Request a quote</Link></p>
         </div>
         <svg className="wave" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30c120 22 240 22 360 6s240-30 360-14 240 34 360 22 240-34 360-22v32H0z" fill="var(--sand)" /><rect y="48" width="1440" height="16" fill="var(--sand)" /></svg>

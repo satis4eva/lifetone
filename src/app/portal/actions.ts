@@ -166,3 +166,91 @@ export async function closeQuote(form: FormData) {
   await db.quoteRequest.updateMany({ where: { id: str(form, "id"), brandId: brand.id, status: { in: ["NEW", "QUOTED"] } }, data: { status: "CLOSED" } });
   revalidatePath("/portal", "layout");
 }
+
+// ---------- Coach hire: vehicles and trip charges ----------
+
+/** The brand's own provider record, used for vehicles it runs itself. Created the first time. */
+async function ownFleetProvider(brandId: string, brandName: string, email: string) {
+  const found = await db.provider.findFirst({ where: { brandId, licenceNo: "OWN-FLEET" } });
+  if (found) return found;
+  return db.provider.create({
+    data: { brandId, business: `${brandName} (own fleet)`, type: "TRANSPORT", licenceNo: "OWN-FLEET", phone: "", email, status: "APPROVED" },
+  });
+}
+
+const money = (f: FormData, k: string) => { const n = parseRupees(str(f, k)); return Number.isFinite(n) ? n : NaN; };
+const int = (f: FormData, k: string, min: number, max: number, fallback: number) => {
+  const n = parseInt(str(f, k), 10); return Number.isInteger(n) ? Math.min(max, Math.max(min, n)) : fallback;
+};
+
+/** Adds a vehicle, or updates one (when id is set). Keeps its listing's title and price in step. */
+export async function saveVehicle(form: FormData) {
+  const user = await requireBrandAdmin();
+  const brand = await getBrand();
+  const back = (e?: string) => redirect(`/portal/fleet${e ? `?error=${encodeURIComponent(e)}` : "?saved=1"}`);
+  const name = str(form, "name").slice(0, 80);
+  const seats = int(form, "seats", 1, 120, 0);
+  const hourlyRate = money(form, "hourlyRate"), dayRate = money(form, "dayRate");
+  const overnightRate = str(form, "overnightRate") ? money(form, "overnightRate") : 0;
+  const extraMileRate = str(form, "extraMileRate") ? money(form, "extraMileRate") : 0;
+  if (!name) back("Enter the vehicle name, e.g. 53-seat coach.");
+  if (!seats) back("Enter how many passenger seats it has.");
+  if (!(hourlyRate > 0) || !(dayRate > 0)) back("Enter an hourly rate and a day rate above zero.");
+  if (!(overnightRate >= 0) || !(extraMileRate >= 0)) back("Check the overnight and mileage amounts.");
+  const data = {
+    name, seats, hourlyRate, dayRate, overnightRate, extraMileRate,
+    minHours: int(form, "minHours", 1, 24, 4), dayHours: int(form, "dayHours", 1, 24, 10), includedMiles: int(form, "includedMiles", 0, 2000, 0),
+  };
+  const description = `${seats} passenger seats. ${data.minHours}-hour minimum hire; day hire covers up to ${data.dayHours} hours. Get a quote for your route.`;
+  const id = str(form, "id");
+  if (id) {
+    const v = await db.vehicle.findFirst({ where: { id, brandId: brand.id } });
+    if (!v) back();
+    await db.vehicle.update({ where: { id: v!.id }, data });
+    await db.listing.update({ where: { id: v!.listingId }, data: { title: name, price: dayRate, description } });
+  } else {
+    const provider = await ownFleetProvider(brand.id, brand.name, user.email);
+    const listing = await db.listing.create({
+      data: { brandId: brand.id, providerId: provider.id, type: "TRANSPORT", title: name, place: "Your pickup point", description, price: dayRate, unit: "DAY", needsConfirmation: true, status: "PAUSED" },
+    });
+    await db.vehicle.create({ data: { ...data, brandId: brand.id, listingId: listing.id } });
+  }
+  revalidatePath("/portal/fleet");
+  back();
+}
+
+export async function vehicleAction(form: FormData) {
+  const brand = await ctx();
+  const v = await db.vehicle.findFirst({ where: { id: str(form, "id"), brandId: brand.id }, include: { listing: true } });
+  if (!v) return;
+  const action = str(form, "action");
+  if (action === "show") await db.listing.update({ where: { id: v.listingId }, data: { status: "LIVE" } });
+  else if (action === "hide") await db.listing.update({ where: { id: v.listingId }, data: { status: "PAUSED" } });
+  else if (action === "remove") {
+    // Kept for past bookings and quotes; just taken out of use.
+    await db.vehicle.update({ where: { id: v.id }, data: { active: false } });
+    await db.listing.update({ where: { id: v.listingId }, data: { status: "PAUSED" } });
+  } else if (action === "restore") await db.vehicle.update({ where: { id: v.id }, data: { active: true } });
+  revalidatePath("/portal/fleet");
+  revalidatePath("/");
+}
+
+export async function saveCharge(form: FormData) {
+  const brand = await ctx();
+  const name = str(form, "name").slice(0, 60);
+  const amount = money(form, "amount");
+  const per = ["TRIP", "DAY", "HOUR"].includes(str(form, "per")) ? str(form, "per") : "TRIP";
+  if (!name || !(amount >= 0)) redirect(`/portal/fleet?error=${encodeURIComponent("Enter the charge name and amount.")}#charges`);
+  const data = { name, amount, per, autoAdd: form.get("autoAdd") === "on" };
+  const id = str(form, "id");
+  if (id) await db.tripCharge.updateMany({ where: { id, brandId: brand.id }, data });
+  else await db.tripCharge.create({ data: { ...data, brandId: brand.id } });
+  revalidatePath("/portal/fleet");
+  redirect("/portal/fleet?saved=1#charges");
+}
+
+export async function deleteCharge(form: FormData) {
+  const brand = await ctx();
+  await db.tripCharge.deleteMany({ where: { id: str(form, "id"), brandId: brand.id } });
+  revalidatePath("/portal/fleet");
+}

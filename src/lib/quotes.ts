@@ -32,9 +32,9 @@ export async function newQuoteRef(prefix: string): Promise<string> {
 }
 
 /** One line describing the trip, used in emails, lists and the booking note. */
-export function tripLine(q: Pick<QuoteRequest, "type" | "fromPlace" | "toPlace" | "returnTrip" | "startDate" | "endDate" | "people">) {
+export function tripLine(q: Pick<QuoteRequest, "type" | "fromPlace" | "toPlace" | "returnTrip" | "startDate" | "endDate" | "people"> & { pickupTime?: string | null; hours?: number | null }) {
   const where = q.toPlace ? `${q.fromPlace} → ${q.toPlace}${q.returnTrip ? " (return)" : ""}` : q.fromPlace;
-  const when = q.endDate ? `${fmtDate(q.startDate)} to ${fmtDate(q.endDate)}` : fmtDate(q.startDate);
+  const when = (q.endDate ? `${fmtDate(q.startDate)} to ${fmtDate(q.endDate)}` : fmtDate(q.startDate)) + (q.pickupTime ? ` at ${q.pickupTime}` : "") + (q.hours ? `, ${q.hours} h` : "");
   return `${q.type ? TYPE_LABEL[q.type] + ": " : ""}${where} · ${when} · ${q.people} ${q.people === 1 ? "person" : "people"}`;
 }
 

@@ -36,6 +36,7 @@ model Brand {
   serviceFeePct    Decimal   @default(3) @db.Decimal(5, 2)  // charged to guests
   platformFeePct   Decimal   @default(10) @db.Decimal(5, 2) // DBS Group's share of brand revenue
   allowCash        Boolean   @default(true)
+  businessType     String    @default("MARKETPLACE") // MARKETPLACE | COACH (see src/lib/coach.ts)
   providerSignup   Boolean   @default(true) // false = no "For providers" link and /providers/join is off
   depositPct       Int       @default(20)
   settleCurrency   String    @default("LKR")
@@ -48,6 +49,8 @@ model Brand {
   emails    Email[]
   updates   Update[]
   quotes    QuoteRequest[]
+  vehicles  Vehicle[]
+  tripCharges TripCharge[]
 }
 
 enum Role {
@@ -161,6 +164,7 @@ model Listing {
 
   bookings Booking[]
   quotes   QuoteRequest[]
+  vehicle  Vehicle?
 
   @@index([brandId, status, type])
 }
@@ -309,6 +313,8 @@ model QuoteRequest {
   budget      String?
   details     String       @default("")
   phone       String?
+  pickupTime  String?      // e.g. "08:30"
+  hours       Int?         // hours of hire the guest expects
   status      QuoteStatus  @default(NEW)
   // The brand's offer
   listingId   String?      // the provider's service that will deliver it
@@ -326,4 +332,39 @@ model QuoteRequest {
   messages Message[]
 
   @@index([brandId, status])
+}
+
+// Coach and transport hire: a vehicle type the brand runs, with its rates. Each vehicle has a
+// listing (hidden unless the brand shows it) so quotes and bookings go through the normal flow.
+model Vehicle {
+  id             String   @id @default(cuid())
+  brandId        String
+  brand          Brand    @relation(fields: [brandId], references: [id])
+  listingId      String   @unique
+  listing        Listing  @relation(fields: [listingId], references: [id])
+  name           String   // e.g. "53-seat executive coach"
+  seats          Int
+  hourlyRate     Int      // minor units
+  minHours       Int      @default(4)
+  dayRate        Int      // covers up to dayHours
+  dayHours       Int      @default(10)
+  overnightRate  Int      @default(0) // driver accommodation per extra day
+  includedMiles  Int      @default(0) // per day; 0 = not tracked
+  extraMileRate  Int      @default(0)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  @@index([brandId, active])
+}
+
+// Extra charges for trips: ULEZ, congestion charge, tolls, parking, waiting time.
+model TripCharge {
+  id        String   @id @default(cuid())
+  brandId   String
+  brand     Brand    @relation(fields: [brandId], references: [id])
+  name      String
+  amount    Int      // minor units
+  per       String   @default("TRIP") // TRIP | DAY | HOUR
+  autoAdd   Boolean  @default(true)   // included in suggested prices
+  createdAt DateTime @default(now())
 }

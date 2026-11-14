@@ -6,6 +6,7 @@ import { requirePlatformAdmin } from "@/lib/auth";
 import { saveImage } from "@/lib/media";
 import { HEX, PRESETS, isPreset, FONT_PAIRS } from "@/lib/theme";
 import { COUNTRIES, isCountry } from "@/lib/country";
+import { isBusinessType } from "@/lib/coach";
 import { createLoginToken } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 
@@ -78,6 +79,7 @@ export async function saveBrand(form: FormData) {
     active: form.get("active") === "on",
     providerSignup: form.get("providerSignup") === "on",
   };
+  if (isBusinessType(str(form, "businessType"))) data.businessType = str(form, "businessType");
   const country = str(form, "country");
   if (isCountry(country) && country !== b!.country) {
     // Prices are stored in the brand currency, so a currency change needs empty prices or a manual review.
