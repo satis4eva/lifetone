@@ -254,3 +254,56 @@ export async function deleteCharge(form: FormData) {
   await db.tripCharge.deleteMany({ where: { id: str(form, "id"), brandId: brand.id } });
   revalidatePath("/portal/fleet");
 }
+
+// ---------- Listings: full edit and add ----------
+
+const LISTING_TYPES = ["STAY", "DRIVER", "TRANSPORT", "GUIDE", "SHARE", "PACKAGE", "WELLNESS"] as const;
+const PRICE_UNITS = ["NIGHT", "DAY", "PERSON", "SEAT", "WEEK", "SESSION"] as const;
+
+/** Saves a listing's details (and its provider's contact details), or adds a new listing. */
+export async function saveListing(form: FormData) {
+  const user = await requireBrandAdmin();
+  const brand = await getBrand();
+  const id = str(form, "id");
+  const back = (e: string) => redirect(`/portal/listings/${id || "new"}?error=${encodeURIComponent(e)}`);
+  const type = str(form, "type") as (typeof LISTING_TYPES)[number];
+  const unit = str(form, "unit") as (typeof PRICE_UNITS)[number];
+  const title = str(form, "title").slice(0, 120), place = str(form, "place").slice(0, 120), description = str(form, "description").slice(0, 4000);
+  const price = parseRupees(str(form, "price"));
+  if (!LISTING_TYPES.includes(type) || !PRICE_UNITS.includes(unit)) back("Choose the type and how it's priced.");
+  if (!title || !place) back("Enter a title and a place.");
+  if (!(price > 0)) back("Enter a price above zero.");
+  const data = { type, unit, title, place, description, price, needsConfirmation: form.get("needsConfirmation") === "on" };
+  const provider = {
+    business: str(form, "business").slice(0, 120), licenceNo: str(form, "licenceNo").slice(0, 80),
+    phone: str(form, "phone").slice(0, 40), email: str(form, "providerEmail").toLowerCase().slice(0, 120),
+  };
+
+  if (id) {
+    const l = await db.listing.findFirst({ where: { id, brandId: brand.id }, include: { provider: true } });
+    if (!l) redirect("/portal/listings");
+    await db.listing.update({ where: { id: l!.id }, data });
+    if (l!.provider.licenceNo !== "OWN-FLEET" && provider.business) {
+      await db.provider.update({ where: { id: l!.providerId }, data: provider });
+    }
+    revalidatePath("/", "layout");
+    redirect(`/portal/listings/${l!.id}?saved=1`);
+  }
+
+  // New listing: for the brand's own business, an existing provider, or a new provider.
+  const choice = str(form, "providerId");
+  let providerId: string;
+  if (choice === "own") providerId = (await ownFleetProvider(brand.id, brand.name, user.email)).id;
+  else if (choice === "new") {
+    if (!provider.business || !provider.phone) back("Enter the new provider's business name and phone.");
+    providerId = (await db.provider.create({ data: { ...provider, brandId: brand.id, type, status: "APPROVED" } })).id;
+  } else {
+    const p = await db.provider.findFirst({ where: { id: choice, brandId: brand.id } });
+    if (!p) back("Choose who provides this service.");
+    providerId = p!.id;
+  }
+  const status = form.get("live") === "on" ? "LIVE" : "PAUSED";
+  const l = await db.listing.create({ data: { ...data, brandId: brand.id, providerId, status } });
+  revalidatePath("/", "layout");
+  redirect(`/portal/listings/${l.id}?saved=new`);
+}

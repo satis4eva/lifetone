@@ -15,8 +15,8 @@ export default async function PortalListings({ searchParams }: { searchParams: {
   const listings = await db.listing.findMany({ where: { brandId: brand.id }, include: { provider: true }, orderBy: [{ status: "asc" }, { createdAt: "desc" }] });
   return (
     <div className="card stack">
-      <h2>Listings and providers</h2>
-      <p className="muted" style={{ margin: 0 }}>Paused listings are hidden from search. Price changes apply to new bookings only.</p>
+      <div className="row" style={{ justifyContent: "space-between" }}><h2>Listings and providers</h2><a className="btn" href="/portal/listings/new">+ Add listing</a></div>
+      <p className="muted" style={{ margin: 0 }}>Press <strong>Edit</strong> to change a listing&apos;s title, description, place, type, price or provider details. Paused listings are hidden from search. Price changes apply to new bookings only.</p>
       <div className="notice">
         <strong>Three ways to add a photo:</strong> 1. upload your own JPG, PNG or WebP (up to 5 MB) or paste an image link;
         2. <a href="https://www.canva.com/" target="_blank" rel="noopener noreferrer">design it in Canva</a> at 1200 × 800 px, download as JPG or PNG, then upload it;
@@ -52,7 +52,7 @@ export default async function PortalListings({ searchParams }: { searchParams: {
                 </form>
               </details>
             </td>
-            <td>{l.title}<div className="muted" style={{ fontSize: ".85rem" }}>{TYPE_LABEL[l.type]} · {l.place}</div></td>
+            <td><a href={`/portal/listings/${l.id}`}>{l.title}</a><div className="muted" style={{ fontSize: ".85rem" }}>{TYPE_LABEL[l.type]} · {l.place}</div></td>
             <td>{l.provider.business}<div className="muted" style={{ fontSize: ".85rem" }}>{l.provider.licenceNo}</div></td>
             <td>
               <form action={listingAction} className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
@@ -66,6 +66,7 @@ export default async function PortalListings({ searchParams }: { searchParams: {
             <td>
               <form action={listingAction} className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
                 <input type="hidden" name="id" value={l.id} />
+                <a className="btn small" href={`/portal/listings/${l.id}`}>Edit</a>
                 {l.status === "PENDING" && <><button className="btn small" name="action" value="approve">Approve</button><button className="btn ghost small" name="action" value="reject">Reject</button></>}
                 {l.status === "LIVE" && <button className="btn ghost small" name="action" value="pause">Pause</button>}
                 {l.status === "PAUSED" && <button className="btn ghost small" name="action" value="resume">Resume</button>}
