@@ -29,10 +29,12 @@ async function main() {
       name: "Lifetone",
       tagline: "Sri Lanka, booked locally",
       domains: ["lifetone.online", "www.lifetone.online", "localhost", "lifetone.localhost"],
-      color: "#0d6b57",
+      color: "#0e8f86",
       bookingPrefix: "LT",
     },
   });
+  // Tropical theme: move Lifetone off the original green if it was never customised.
+  if (brand.color === "#0d6b57") await db.brand.update({ where: { id: brand.id }, data: { color: "#0e8f86" } });
 
   const platformEmail = (process.env.PLATFORM_ADMIN_EMAIL || "admin@example.com").toLowerCase();
   const ownerEmail = (process.env.BRAND_ADMIN_EMAIL || "owner@example.com").toLowerCase();
