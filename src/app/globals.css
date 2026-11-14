@@ -48,7 +48,7 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}
 .hero-in{position:relative;max-width:1100px;margin:0 auto;padding:0 16px}
 .hero h1{font-size:clamp(2rem,5vw,3.2rem);max-width:640px}
 .hero p{max-width:560px;font-size:1.1rem;opacity:.92;margin:12px 0 22px}
-.wave{position:absolute;left:0;right:0;bottom:-3px;display:block;width:100%;height:63px}
+.wave{position:absolute;left:0;right:0;bottom:-4px;display:block;width:100%;height:64px}
 .search{display:grid;grid-template-columns:1.4fr 1fr auto;gap:8px;background:var(--surface);padding:8px;border-radius:18px;max-width:760px;box-shadow:0 12px 30px rgba(6,60,55,.25)}
 .search label{display:flex;flex-direction:column;padding:6px 12px;color:var(--muted);font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;gap:0}
 .search input,.search select{border:0;background:transparent;font:inherit;font-size:1rem;color:var(--ink);padding:2px 0;text-transform:none;letter-spacing:0;font-weight:600;border-radius:0}

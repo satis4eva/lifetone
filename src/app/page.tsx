@@ -54,7 +54,7 @@ export default async function Explore({ searchParams }: { searchParams: { q?: st
             <button className="btn" type="submit">Search</button>
           </form>
         </div>
-        <svg className="wave" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30c120 22 240 22 360 6s240-30 360-14 240 34 360 22 240-34 360-22v32H0z" fill="var(--sand)" /></svg>
+        <svg className="wave" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30c120 22 240 22 360 6s240-30 360-14 240 34 360 22 240-34 360-22v32H0z" fill="var(--sand)" /><rect y="48" width="1440" height="16" fill="var(--sand)" /></svg>
       </section>
 
       {update && <div className="update"><span className="dot" aria-hidden="true" /><div><strong>{update.title}.</strong> {update.body}</div></div>}
