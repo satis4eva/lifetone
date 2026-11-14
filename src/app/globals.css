@@ -3,6 +3,8 @@
 :root{
   --sand:var(--brand-bg, #fff8ee); --surface:#fff; --ink:#123b33; --muted:#557169; --line:#efe3cf;
   --accent:#0e8f86; --accent-deep:color-mix(in srgb, var(--accent) 72%, #001a17); --accent-soft:color-mix(in srgb, var(--accent) 16%, white);
+  /* Text in the brand colour (links, pills): darkened on light pages, lightened on dark ones, so any brand colour stays readable. */
+  --accent-text:color-mix(in srgb, var(--accent) 78%, #000);
   --cta:var(--brand-cta, #ff6f59); --cta-soft:color-mix(in srgb, var(--cta) 16%, white); --leaf:#3fa34d; --sun:#ffc145;
   --warn:#a86500; --warn-soft:#fbefd6; --bad:#b3261e;
   --display:var(--brand-display, "Outfit"), "Segoe UI", system-ui, sans-serif;
@@ -12,6 +14,7 @@
 @media (prefers-color-scheme: dark){
   :root{ --sand:#0d1f1c; --surface:#132a26; --ink:#e9f5f1; --muted:#9dbcb4; --line:#24413b;
     --accent-soft:color-mix(in srgb, var(--accent) 28%, #132a26); --cta-soft:color-mix(in srgb, var(--cta) 22%, #132a26);
+    --accent-text:color-mix(in srgb, var(--accent) 30%, #fff);
     --warn:#f0b44a; --warn-soft:#3a2d12; --bad:#f2827a; color-scheme:dark; }
 }
 *{box-sizing:border-box}
@@ -19,7 +22,7 @@ html,body{overflow-x:hidden}
 body{margin:0;background:var(--sand);color:var(--ink);font-family:var(--font);line-height:1.5}
 h1,h2,h3{font-family:var(--display);line-height:1.12;margin:0;text-wrap:balance}
 h1{font-size:1.8rem} h2{font-size:1.35rem} h3{font-size:1.08rem}
-a{color:var(--accent)}
+a{color:var(--accent-text);text-underline-offset:2px}
 :focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .num{font-variant-numeric:tabular-nums}
 .muted{color:var(--muted)}
@@ -94,7 +97,7 @@ main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}
 .promo .soft{background:var(--cta-soft)}
 
 /* Shared UI */
-.pill{display:inline-flex;font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-deep);white-space:nowrap}
+.pill{display:inline-flex;font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-text);white-space:nowrap}
 .pill.warn{background:var(--warn-soft);color:var(--warn)}
 .pill.bad{background:transparent;border:1px solid var(--bad);color:var(--bad)}
 .btn{display:inline-block;border:0;border-radius:999px;padding:10px 18px;font:inherit;font-weight:700;background:var(--cta);color:#fff;cursor:pointer;text-decoration:none;text-align:center}
