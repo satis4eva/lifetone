@@ -8,6 +8,7 @@ import { parseRupees } from "@/lib/money";
 import { cleanImageLink, saveImage } from "@/lib/media";
 import { generateImage } from "@/lib/aiImage";
 import { redirect } from "next/navigation";
+import { emailQuoteGuest } from "@/lib/quotes";
 import { cancelBooking, completeBooking, confirmBooking, notify, resolveDateChange } from "@/lib/bookings";
 
 async function ctx() {
@@ -125,4 +126,43 @@ export async function saveSettings(form: FormData) {
     },
   });
   revalidatePath("/", "layout");
+}
+
+/** Brand prices a quote request (or updates a sent price) and emails it to the guest. */
+export async function sendQuote(form: FormData) {
+  const brand = await ctx();
+  const q = await db.quoteRequest.findFirst({ where: { id: str(form, "id"), brandId: brand.id }, include: { guest: true } });
+  if (!q || !["NEW", "QUOTED"].includes(q.status)) return;
+  const back = `/portal/quotes/${q.ref}`;
+  const listing = await db.listing.findFirst({ where: { id: str(form, "listingId"), brandId: brand.id, status: { not: "REJECTED" } } });
+  const price = parseRupees(str(form, "price"));
+  const days = Math.min(60, Math.max(1, parseInt(str(form, "validDays"), 10) || 7));
+  if (!listing) redirect(`${back}?error=${encodeURIComponent("Choose the service (provider) that will deliver this.")}`);
+  if (!Number.isFinite(price) || price <= 0) redirect(`${back}?error=${encodeURIComponent("Enter a price above zero.")}`);
+  const updated = await db.quoteRequest.update({
+    where: { id: q.id },
+    data: {
+      status: "QUOTED", listingId: listing.id, price, included: str(form, "included").slice(0, 1000) || null,
+      allowCash: form.get("allowCash") === "on", validUntil: new Date(Date.now() + days * 86_400_000), quotedAt: new Date(),
+    },
+    include: { guest: true },
+  });
+  await emailQuoteGuest(brand, updated, "quoted");
+  redirect(`${back}?done=sent`);
+}
+
+export async function replyToQuote(form: FormData) {
+  const brand = await ctx();
+  const q = await db.quoteRequest.findFirst({ where: { id: str(form, "id"), brandId: brand.id }, include: { guest: true } });
+  const body = str(form, "body").slice(0, 2000);
+  if (!q || !body) return;
+  await db.message.create({ data: { quoteId: q.id, sender: "BRAND", body } });
+  await emailQuoteGuest(brand, q, "message", body);
+  revalidatePath(`/portal/quotes/${q.ref}`);
+}
+
+export async function closeQuote(form: FormData) {
+  const brand = await ctx();
+  await db.quoteRequest.updateMany({ where: { id: str(form, "id"), brandId: brand.id, status: { in: ["NEW", "QUOTED"] } }, data: { status: "CLOSED" } });
+  revalidatePath("/portal", "layout");
 }

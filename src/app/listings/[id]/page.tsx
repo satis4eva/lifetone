@@ -37,6 +37,7 @@ export default async function ListingPage({ params }: { params: { id: string } }
             listing={{ id: l.id, price: l.price, unit: l.unit, type: l.type }}
             brand={{ serviceFeePct: pct(brand.serviceFeePct), depositPct: brand.depositPct, allowCash: brand.allowCash, currency: brand.currency, cashNote: countryOf(brand.country).cashNote }}
           />
+          <p className="muted" style={{ margin: 0, fontSize: ".9rem" }}>Different dates, a bigger group or a custom route? <Link href={`/quote?listing=${l.id}`}>Request a quote</Link></p>
         </div>
       </div>
     </div>

@@ -27,7 +27,7 @@ export async function notify(brand: Brand, bookingId: string, event: BookingEven
  * Safe to call more than once and from racing requests: each step only applies once.
  */
 export async function applyPaymentResult(reference: string, reported: "SUCCEEDED" | "FAILED", amount?: number, currency?: string) {
-  const payment = await db.payment.findUnique({ where: { reference }, include: { booking: { include: { listing: true, brand: true } } } });
+  const payment = await db.payment.findUnique({ where: { reference }, include: { booking: { include: { listing: true, brand: true, quote: { select: { id: true } } } } } });
   if (!payment) return null;
   const b = payment.booking;
   let status = reported;
@@ -40,9 +40,11 @@ export async function applyPaymentResult(reference: string, reported: "SUCCEEDED
 
   if (status === "FAILED") {
     await db.booking.updateMany({ where: { id: b.id, status: "PENDING_PAYMENT" }, data: { status: "CANCELLED" } });
+    if (b.quote) await db.quoteRequest.updateMany({ where: { bookingId: b.id, status: "ACCEPTED" }, data: { status: "QUOTED", bookingId: null } });
     return b;
   }
-  const next = b.listing.needsConfirmation ? "REQUESTED" : "CONFIRMED";
+  // A quote was already agreed with the brand, so it is confirmed as soon as it is paid.
+  const next = b.listing.needsConfirmation && !b.quote ? "REQUESTED" : "CONFIRMED";
   const moved = await db.booking.updateMany({ where: { id: b.id, status: "PENDING_PAYMENT" }, data: { status: next } });
   if (moved.count !== 1) {
     // Paid after the booking was cancelled: give the money back.

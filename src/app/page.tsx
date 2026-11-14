@@ -51,6 +51,7 @@ export default async function Explore({ searchParams }: { searchParams: { q?: st
             </select></label>
             <button className="btn" type="submit">Search</button>
           </form>
+          <p style={{ margin: "12px 0 0" }}>Need something bespoke? <Link href="/quote" style={{ color: "inherit", fontWeight: 700, textDecoration: "underline" }}>Request a quote</Link></p>
         </div>
         <svg className="wave" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0 30c120 22 240 22 360 6s240-30 360-14 240 34 360 22 240-34 360-22v32H0z" fill="var(--sand)" /><rect y="48" width="1440" height="16" fill="var(--sand)" /></svg>
       </section>
@@ -97,7 +98,8 @@ export default async function Explore({ searchParams }: { searchParams: { q?: st
               </div>
             </Link>
           ))}
-          {listings.length === 0 && <div className="card muted">No listings match. Try another place or type. <Link href="/">Show everything</Link></div>}
+          {listings.length === 0 && <div className="card muted">No listings match. Try another place or type, <Link href="/">show everything</Link>, or <Link href={`/quote?${new URLSearchParams({ ...(q ? { q } : {}), ...(type ? { type } : {}) })}`}>tell us what you need and get a quote</Link>.</div>}
+          {listings.length > 0 && filtered && <div className="card muted">Not quite right? <Link href={`/quote?${new URLSearchParams({ ...(q ? { q } : {}), ...(type ? { type } : {}) })}`}>Request a quote</Link> and we'll find it for you.</div>}
         </div>
       </section>
 

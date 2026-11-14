@@ -41,6 +41,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {brand.active && (
               <nav className="nav" aria-label="Main">
                 <Link href="/">Explore</Link>
+                <Link href="/quote">Get a quote</Link>
                 <Link href="/bookings">My bookings</Link>
                 <Link href="/providers/join">List your service</Link>
                 {user?.role === "BRAND_ADMIN" && <Link href="/portal">Client portal</Link>}

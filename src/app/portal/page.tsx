@@ -6,22 +6,24 @@ import { moneyFmt } from "@/lib/money";
 import { split } from "@/lib/pricing";
 import { TYPE_LABEL, fmtDate } from "@/lib/labels";
 import { bookingAction, listingAction } from "./actions";
+import { tripLine } from "@/lib/quotes";
 
 export default async function Overview() {
   await requireBrandAdmin();
   const brand = await getBrand();
   const fmt = moneyFmt(brand.currency);
-  const [active, requests, changes, pending] = await Promise.all([
+  const [active, requests, changes, pending, newQuotes] = await Promise.all([
     db.booking.findMany({ where: { brandId: brand.id, status: { in: ["CONFIRMED", "COMPLETED"] } } }),
     db.booking.findMany({ where: { brandId: brand.id, status: "REQUESTED" }, include: { listing: true, guest: true }, orderBy: { createdAt: "asc" } }),
     db.booking.findMany({ where: { brandId: brand.id, changeRequestDate: { not: null } }, include: { listing: true, guest: true } }),
     db.listing.findMany({ where: { brandId: brand.id, status: "PENDING" }, include: { provider: true } }),
+    db.quoteRequest.findMany({ where: { brandId: brand.id, status: "NEW" }, include: { guest: true }, orderBy: { createdAt: "asc" } }),
   ]);
   const t = active.reduce((a, b) => {
     const s = split({ subtotal: b.subtotal, serviceFee: b.serviceFee, cashAmount: b.cashAmount, commissionPct: Number(b.commissionPct), platformFeePct: Number(b.platformFeePct) });
     return { gmv: a.gmv + b.subtotal, net: a.net + s.brandNet };
   }, { gmv: 0, net: 0 });
-  const todo = requests.length + changes.length + pending.length;
+  const todo = requests.length + changes.length + pending.length + newQuotes.length;
 
   return (
     <div className="stack">
@@ -33,6 +35,12 @@ export default async function Overview() {
       </div>
       <div className="card stack" style={{ gap: 0 }}>
         <h2 style={{ marginBottom: 8 }}>Needs your action</h2>
+        {newQuotes.map(r => (
+          <div key={r.id} className="row" style={{ justifyContent: "space-between", borderTop: "1px solid var(--line)", padding: "10px 0" }}>
+            <div><strong>Quote request <Link href={`/portal/quotes/${r.ref}`}>{r.ref}</Link></strong><div className="muted">{r.guest.name} · {tripLine(r)}</div></div>
+            <Link className="btn small" href={`/portal/quotes/${r.ref}`}>Send a price</Link>
+          </div>
+        ))}
         {requests.map(b => (
           <form key={b.id} action={bookingAction} className="row" style={{ justifyContent: "space-between", borderTop: "1px solid var(--line)", padding: "10px 0" }}>
             <div><strong>Booking request <Link href={`/portal/bookings/${b.ref}`}>{b.ref}</Link></strong><div className="muted num">{b.guest.name} · {b.listing.title} · from {fmtDate(b.startDate)} · {fmt(b.total)}</div></div>

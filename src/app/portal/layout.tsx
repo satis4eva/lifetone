@@ -5,7 +5,7 @@ import { getBrand } from "@/lib/brand";
 export const dynamic = "force-dynamic";
 
 const TABS: Array<[string, string]> = [
-  ["/portal", "Overview"], ["/portal/bookings", "Bookings"], ["/portal/listings", "Listings"], ["/portal/payouts", "Payouts"], ["/portal/reports", "Reports"],
+  ["/portal", "Overview"], ["/portal/bookings", "Bookings"], ["/portal/quotes", "Quotes"], ["/portal/listings", "Listings"], ["/portal/payouts", "Payouts"], ["/portal/reports", "Reports"],
   ["/portal/emails", "Guest emails"], ["/portal/updates", "Updates"], ["/portal/settings", "Brand settings"],
 ];
 

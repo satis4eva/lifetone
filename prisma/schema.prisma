@@ -46,6 +46,7 @@ model Brand {
   bookings  Booking[]
   emails    Email[]
   updates   Update[]
+  quotes    QuoteRequest[]
 }
 
 enum Role {
@@ -69,6 +70,7 @@ model User {
   createdAt DateTime @default(now())
 
   bookings    Booking[]
+  quotes      QuoteRequest[]
   provider    Provider?
   loginTokens LoginToken[]
 
@@ -157,6 +159,7 @@ model Listing {
   createdAt   DateTime      @default(now())
 
   bookings Booking[]
+  quotes   QuoteRequest[]
 
   @@index([brandId, status, type])
 }
@@ -202,8 +205,10 @@ model Booking {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
+  note        String?       // e.g. pickup and drop-off from a quote
   payments Payment[]
   messages Message[]
+  quote    QuoteRequest?
 
   @@index([brandId, status])
 }
@@ -236,8 +241,10 @@ enum Sender {
 
 model Message {
   id        String   @id @default(cuid())
-  bookingId String
-  booking   Booking  @relation(fields: [bookingId], references: [id])
+  bookingId String?  // a message belongs to a booking or to a quote request
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+  quoteId   String?
+  quote     QuoteRequest? @relation(fields: [quoteId], references: [id])
   sender    Sender
   body      String
   createdAt DateTime @default(now())
@@ -273,4 +280,49 @@ model Update {
   title     String
   body      String
   createdAt DateTime @default(now())
+}
+
+enum QuoteStatus {
+  NEW       // waiting for the brand to price it
+  QUOTED    // price sent, waiting for the guest
+  ACCEPTED  // guest accepted; bookingId is set
+  DECLINED  // guest said no
+  CLOSED    // brand closed it without quoting
+}
+
+/** Bespoke request: the guest describes what they need, the brand replies with a price. */
+model QuoteRequest {
+  id          String       @id @default(cuid())
+  ref         String       @unique // e.g. LT-Q48213
+  brandId     String
+  brand       Brand        @relation(fields: [brandId], references: [id])
+  guestId     String
+  guest       User         @relation(fields: [guestId], references: [id])
+  type        ListingType?
+  fromPlace   String       // pickup point, or where they want to stay
+  toPlace     String?      // drop-off / destination
+  startDate   DateTime     @db.Date
+  endDate     DateTime?    @db.Date
+  returnTrip  Boolean      @default(false)
+  people      Int          @default(1)
+  budget      String?
+  details     String       @default("")
+  phone       String?
+  status      QuoteStatus  @default(NEW)
+  // The brand's offer
+  listingId   String?      // the provider's service that will deliver it
+  listing     Listing?     @relation(fields: [listingId], references: [id])
+  price       Int?         // before the guest service fee, minor units
+  included    String?
+  validUntil  DateTime?
+  allowCash   Boolean      @default(true)
+  quotedAt    DateTime?
+  bookingId   String?      @unique
+  booking     Booking?     @relation(fields: [bookingId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  messages Message[]
+
+  @@index([brandId, status])
 }

@@ -88,6 +88,7 @@ export async function emailGuest(brand: Brand, b: FullBooking, event: BookingEve
   const details = [
     `${b.listing.title}, ${b.listing.place}`,
     `Reference: ${b.ref}`,
+    ...(b.note ? [b.note] : []),
     `Start: ${fmtDate(b.startDate)} · ${b.quantity} ${b.quantity === 1 ? u.one : u.many}`,
     `Total: ${lkr(b.total)} (${PAY_LABEL[b.payMethod]}${b.cashAmount ? `, ${lkr(b.cashAmount)} cash on the day` : ""})`,
   ].join("\n");

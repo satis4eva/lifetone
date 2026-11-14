@@ -63,6 +63,7 @@ export default async function ManageBooking({ params, searchParams }: { params: 
       <div className="card stack" style={{ gap: 8 }}>
         <div className="row" style={{ justifyContent: "space-between" }}><h1>{b.listing.title}</h1><span className="pill">{STATUS_LABEL[b.status]}</span></div>
         <div className="muted num">{b.ref} · {b.listing.place} · provider {b.listing.provider.business}</div>
+        {b.note && <div>{b.note}</div>}
         <div className="breakdown num">
           <span>Start</span><span>{fmtDate(b.startDate)}</span>
           <span>Quantity</span><span>{b.quantity} {UNIT_LABEL[b.listing.unit].many}</span>

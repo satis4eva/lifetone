@@ -26,6 +26,7 @@ export default async function PortalBooking({ params }: { params: { ref: string 
         <div className="card stack" style={{ gap: 8 }}>
           <div className="row" style={{ justifyContent: "space-between" }}><h2>{b.ref}: {b.listing.title}</h2><span className="pill">{STATUS_LABEL[b.status]}</span></div>
           <div className="muted">{b.guest.name} · {b.guest.email} · provider {b.listing.provider.business} ({b.listing.provider.phone})</div>
+          {b.note && <div>{b.note}</div>}
           <div className="breakdown num">
             <span>Start</span><span>{fmtDate(b.startDate)}</span>
             <span>Quantity</span><span>{b.quantity} {UNIT_LABEL[b.listing.unit].many}</span>
