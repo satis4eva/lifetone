@@ -20,6 +20,7 @@ export default async function ListingPage({ params }: { params: { id: string } }
         <div className="stack">
           <div className="detail-hero">
             <ListingImage type={l.type} imageUrl={l.imageUrl} alt={l.title} />
+            {l.imageIsAi && <span className="tag" style={{ left: "auto", right: 10, zIndex: 2 }}>AI-generated image</span>}
             <div><span className="tag" style={{ position: "static" }}>{TYPE_LABEL[l.type]}</span><h1 style={{ color: "#fff", marginTop: 8 }}>{l.title}</h1><div style={{ fontWeight: 700 }}>{l.place}</div></div>
           </div>
           <div className="card stack" style={{ gap: 8 }}>

@@ -137,6 +137,7 @@ model Listing {
   place       String
   description String
   imageUrl    String?       // "/media/<file>" for uploads, or an https link to an image
+  imageIsAi   Boolean       @default(false) // shown to guests as "AI-generated image"
   price       Int           // LKR cents per unit
   unit        PriceUnit
   needsConfirmation Boolean @default(false) // packages and charters: provider confirms first

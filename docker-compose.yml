@@ -44,6 +44,7 @@ services:
       BRAND_ADMIN_EMAIL: ${BRAND_ADMIN_EMAIL}
       ADMIN_LOGIN_TOKEN: ${ADMIN_LOGIN_TOKEN:-}
       UPLOAD_DIR: /app/uploads
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     volumes:
       - lifetone-uploads:/app/uploads
     networks:

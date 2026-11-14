@@ -6,6 +6,7 @@ import { getBrand } from "@/lib/brand";
 import { requireBrandAdmin } from "@/lib/auth";
 import { parseRupees } from "@/lib/money";
 import { cleanImageLink, saveImage } from "@/lib/media";
+import { generateImage } from "@/lib/aiImage";
 import { redirect } from "next/navigation";
 import { cancelBooking, completeBooking, confirmBooking, notify, resolveDateChange } from "@/lib/bookings";
 
@@ -69,7 +70,11 @@ export async function listingImage(form: FormData) {
   if (!l) return;
   const back = (msg?: string) => redirect(`/portal/listings${msg ? `?error=${encodeURIComponent(msg)}&id=${l.id}` : ""}#l-${l.id}`);
   if (str(form, "action") === "removeImage") {
-    await db.listing.update({ where: { id: l.id }, data: { imageUrl: null } });
+    await db.listing.update({ where: { id: l.id }, data: { imageUrl: null, imageIsAi: false } });
+  } else if (str(form, "action") === "ai") {
+    const made = await generateImage(str(form, "prompt"));
+    if ("error" in made) back(made.error);
+    else await db.listing.update({ where: { id: l.id }, data: { imageUrl: made.url, imageIsAi: true } });
   } else {
     const file = form.get("file");
     const link = str(form, "link");
@@ -82,7 +87,7 @@ export async function listingImage(form: FormData) {
       url = cleanImageLink(link);
       if (!url) back("Paste a full image link starting with https://");
     } else back("Choose an image file or paste an image link.");
-    await db.listing.update({ where: { id: l.id }, data: { imageUrl: url } });
+    await db.listing.update({ where: { id: l.id }, data: { imageUrl: url, imageIsAi: false } });
   }
   revalidatePath("/", "layout");
   back();

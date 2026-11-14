@@ -4,6 +4,7 @@ import { requireBrandAdmin } from "@/lib/auth";
 import { TYPE_LABEL, UNIT_LABEL } from "@/lib/labels";
 import { listingAction, listingImage } from "../actions";
 import ListingImage from "@/components/ListingImage";
+import { aiImagesEnabled, suggestPrompt } from "@/lib/aiImage";
 
 const STATUS = { PENDING: ["Awaiting check", "warn"], LIVE: ["Live", ""], PAUSED: ["Paused", "warn"], REJECTED: ["Rejected", "bad"] } as const;
 
@@ -16,9 +17,10 @@ export default async function PortalListings({ searchParams }: { searchParams: {
       <h2>Listings and providers</h2>
       <p className="muted" style={{ margin: 0 }}>Paused listings are hidden from search. Price changes apply to new bookings only.</p>
       <div className="notice">
-        <strong>Photos:</strong> upload a JPG, PNG or WebP (up to 5 MB), or paste a link to an image. Best size: 1200 × 800 px (landscape).{" "}
-        <a href="https://www.canva.com/" target="_blank" rel="noopener noreferrer">Design in Canva</a> (Canva&apos;s Magic Media can also create AI images), then download it as JPG or PNG and upload it here.
-        Use real photos for stays, vehicles and places, so guests see what they&apos;re booking.
+        <strong>Three ways to add a photo:</strong> 1. upload your own JPG, PNG or WebP (up to 5 MB) or paste an image link;
+        2. <a href="https://www.canva.com/" target="_blank" rel="noopener noreferrer">design it in Canva</a> at 1200 × 800 px, download as JPG or PNG, then upload it;
+        3. create one with AI (under each listing){aiImagesEnabled() ? "" : " once an OpenAI API key is added on the server"}.
+        AI images are labelled for guests. For stays and vehicles, real photos work best, so guests see what they&apos;re booking.
       </div>
       {searchParams.error && <p className="error" role="alert" style={{ margin: 0 }}>{searchParams.error}</p>}
       <div className="table-wrap"><table>
@@ -36,8 +38,18 @@ export default async function PortalListings({ searchParams }: { searchParams: {
                     <button className="btn small" type="submit">Save photo</button>
                     {l.imageUrl && <button className="btn ghost small" name="action" value="removeImage" formNoValidate>Remove</button>}
                   </div>
+                  {l.imageIsAi && <span className="pill warn">AI image</span>}
                 </form>
               </div>
+              <details style={{ marginTop: 6 }}>
+                <summary style={{ cursor: "pointer", fontWeight: 700, fontSize: ".85rem" }}>Create with AI</summary>
+                <form action={listingImage} className="stack" style={{ gap: 6, marginTop: 6 }}>
+                  <input type="hidden" name="id" value={l.id} />
+                  <input type="hidden" name="action" value="ai" />
+                  <textarea name="prompt" rows={4} defaultValue={suggestPrompt(l)} aria-label={`AI image description for ${l.title}`} style={{ fontSize: ".85rem", maxWidth: 320 }} />
+                  <div><button className="btn small" type="submit" disabled={!aiImagesEnabled()}>{aiImagesEnabled() ? "Generate and save (takes up to a minute)" : "Needs an OpenAI API key"}</button></div>
+                </form>
+              </details>
             </td>
             <td>{l.title}<div className="muted" style={{ fontSize: ".85rem" }}>{TYPE_LABEL[l.type]} · {l.place}</div></td>
             <td>{l.provider.business}<div className="muted" style={{ fontSize: ".85rem" }}>{l.provider.licenceNo}</div></td>
