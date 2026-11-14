@@ -1,13 +1,29 @@
 import type { Booking, Brand, Listing, User } from "@prisma/client";
+import nodemailer from "nodemailer";
 import { db } from "./db";
 import { lkr } from "./money";
 import { PAY_LABEL, UNIT_LABEL, fmtDate } from "./labels";
 
 interface Mail { to: string; subject: string; text: string; bookingRef?: string }
 
+// SMTP (e.g. Hostinger Mail) when SMTP_HOST is set. One transport, reused.
+let smtp: nodemailer.Transporter | null = null;
+function smtpTransport() {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) return null;
+  if (!smtp) {
+    const port = Number(process.env.SMTP_PORT || 465);
+    smtp = nodemailer.createTransport({
+      host: process.env.SMTP_HOST, port, secure: port === 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+  }
+  return smtp;
+}
+export const emailConfigured = (brand: Brand) => !!smtpTransport() || (!!process.env.RESEND_API_KEY && !!brand.emailFrom);
+
 /**
- * Sends an email from the brand and logs it. Uses Resend when RESEND_API_KEY is set
- * and the brand has a verified sender (emailFrom); otherwise only logs it (development).
+ * Sends an email from the brand and logs it. Uses SMTP when SMTP_* is set, otherwise Resend when
+ * RESEND_API_KEY is set and the brand has a verified sender; otherwise only logs it (development).
  */
 export async function sendEmail(brand: Brand, mail: Mail) {
   // Sign-in tokens are never stored: the portal shows this log to brand admins.
@@ -15,6 +31,22 @@ export async function sendEmail(brand: Brand, mail: Mail) {
   const record = await db.email.create({
     data: { brandId: brand.id, to: mail.to, subject: mail.subject, body: redacted, bookingRef: mail.bookingRef },
   });
+  const transport = smtpTransport();
+  if (transport) {
+    try {
+      // The sender must be the authenticated mailbox; replies go to the brand's inbox.
+      await transport.sendMail({
+        from: { name: brand.name, address: process.env.SMTP_USER! },
+        replyTo: process.env.SMTP_REPLY_TO || undefined,
+        to: mail.to, subject: mail.subject, text: mail.text,
+      });
+      await db.email.update({ where: { id: record.id }, data: { status: "sent" } });
+    } catch (e) {
+      console.error("SMTP send failed:", e);
+      await db.email.update({ where: { id: record.id }, data: { status: "failed", error: String(e).slice(0, 500) } });
+    }
+    return;
+  }
   const key = process.env.RESEND_API_KEY;
   if (!key || !brand.emailFrom) {
     // In development the full email (with its link) goes to the terminal so you can sign in.

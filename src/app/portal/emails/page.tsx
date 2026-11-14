@@ -1,17 +1,18 @@
 import { db } from "@/lib/db";
 import { getBrand } from "@/lib/brand";
+import { emailConfigured } from "@/lib/email";
 import { requireBrandAdmin } from "@/lib/auth";
 
 export default async function Emails() {
   await requireBrandAdmin();
   const brand = await getBrand();
   const emails = await db.email.findMany({ where: { brandId: brand.id }, orderBy: { createdAt: "desc" }, take: 200 });
-  const configured = !!process.env.RESEND_API_KEY && !!brand.emailFrom;
+  const configured = emailConfigured(brand);
   return (
     <div className="card stack">
       <h2>Guest emails</h2>
       <p className="muted" style={{ margin: 0 }}>
-        {configured ? `Sent from ${brand.emailFrom} through Resend.` : "Email sending isn't set up yet, so emails are logged here only. Add RESEND_API_KEY and a sender address in Brand settings to send them."}
+        {configured ? (process.env.SMTP_USER ? `Sent from ${process.env.SMTP_USER}${process.env.SMTP_REPLY_TO ? `; replies go to ${process.env.SMTP_REPLY_TO}` : ""}.` : `Sent from ${brand.emailFrom} through Resend.`) : "Email sending isn't set up yet, so emails are logged here only. Add SMTP settings (or Resend) to send them."}
       </p>
       {emails.map(e => (
         <details key={e.id} className="card" style={{ padding: "10px 12px" }}>
