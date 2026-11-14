@@ -17,6 +17,8 @@ model Brand {
   slug             String    @unique
   name             String
   tagline          String    @default("")
+  country          String    @default("LK")  // see src/lib/country.ts
+  currency         String    @default("LKR") // prices and bookings, in minor units
   domains          String[]  // hostnames that serve this brand, e.g. ["lifetone.lk", "www.lifetone.lk"]
   color            String    @default("#0e8f86") // main colour (header, links)
   ctaColor         String    @default("#ff6f59") // buttons

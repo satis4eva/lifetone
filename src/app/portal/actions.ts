@@ -58,7 +58,7 @@ export async function listingAction(form: FormData) {
     await db.listing.update({ where: { id: l.id }, data: { status: "LIVE" } });
   } else if (action === "price") {
     const price = parseRupees(str(form, "price"));
-    if (price >= 10000) await db.listing.update({ where: { id: l.id }, data: { price } });
+    if (price >= 100) await db.listing.update({ where: { id: l.id }, data: { price } });
   }
   revalidatePath("/portal/listings");
 }

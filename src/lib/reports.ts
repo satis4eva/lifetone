@@ -8,7 +8,7 @@ export interface ReportRow {
   brandRevenue: number; platformFee: number; brandNet: number;
 }
 export interface MonthlyReport {
-  month: string; label: string; rows: ReportRow[];
+  month: string; label: string; currency: string; rows: ReportRow[];
   cancelled: { count: number; refunded: number };
   totals: Omit<ReportRow, "ref" | "bookedOn" | "startDate" | "guest" | "email" | "listing" | "provider" | "payMethod" | "status"> & { bookings: number; bookingValue: number };
 }
@@ -21,9 +21,9 @@ export const validMonth = (m?: string) => (m && /^\d{4}-(0[1-9]|1[0-2])$/.test(m
 
 /**
  * Income for bookings made in the month (by booking date): confirmed and completed bookings,
- * plus a count of cancellations and what was refunded. Amounts in LKR cents.
+ * plus a count of cancellations and what was refunded. Amounts in the brand currency's minor units.
  */
-export async function monthlyReport(brandId: string, month: string): Promise<MonthlyReport> {
+export async function monthlyReport(brandId: string, month: string, currency = "LKR"): Promise<MonthlyReport> {
   const from = new Date(`${month}-01T00:00:00Z`);
   const to = new Date(from); to.setUTCMonth(to.getUTCMonth() + 1);
   const [bookings, cancelled] = await Promise.all([
@@ -45,7 +45,7 @@ export async function monthlyReport(brandId: string, month: string): Promise<Mon
   });
   const sum = (k: keyof ReportRow) => rows.reduce((a, r) => a + (r[k] as number), 0);
   return {
-    month,
+    month, currency,
     label: from.toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" }),
     rows,
     cancelled: {

@@ -4,10 +4,10 @@ import { useFormState, useFormStatus } from "react-dom";
 import type { ListingType, PriceUnit } from "@prisma/client";
 import { quote, unitsBetween, type PayMethod } from "@/lib/pricing";
 import { createBooking } from "@/app/actions/booking";
+import { formatMoney } from "@/lib/country";
 
 // Client-side copies of labels (avoids importing server-only modules).
 const UNITS: Record<PriceUnit, string> = { NIGHT: "nights", DAY: "days", PERSON: "people", SEAT: "seats", WEEK: "weeks", SESSION: "sessions" };
-const rs = (c: number) => "Rs " + Math.round(c / 100).toLocaleString("en-GB");
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 function Submit({ pay }: { pay: PayMethod }) {
@@ -21,9 +21,10 @@ function Submit({ pay }: { pay: PayMethod }) {
 
 export default function BookingForm({ listing, brand }: {
   listing: { id: string; price: number; unit: PriceUnit; type: ListingType };
-  brand: { serviceFeePct: number; depositPct: number; allowCash: boolean };
+  brand: { serviceFeePct: number; depositPct: number; allowCash: boolean; currency: string; cashNote: string };
 }) {
   const range = listing.unit === "NIGHT" || listing.unit === "DAY";
+  const rs = (c: number) => formatMoney(c, brand.currency);
   const today = iso(new Date());
   const start0 = iso(new Date(Date.now() + 14 * 86_400_000));
   const [start, setStart] = useState(start0);
@@ -56,7 +57,7 @@ export default function BookingForm({ listing, brand }: {
         <label className="opt"><input type="radio" name="payMethod" value="CARD" checked={pay === "CARD"} onChange={() => setPay("CARD")} /><span><strong>Card now</strong><br /><span className="muted">Processed securely by DPayments</span></span></label>
         {brand.allowCash && <>
           <label className="opt"><input type="radio" name="payMethod" value="DEPOSIT" checked={pay === "DEPOSIT"} onChange={() => setPay("DEPOSIT")} /><span><strong>{brand.depositPct}% deposit now, rest in cash</strong><br /><span className="muted">Pay the balance to the provider on the day</span></span></label>
-          <label className="opt"><input type="radio" name="payMethod" value="CASH" checked={pay === "CASH"} onChange={() => setPay("CASH")} /><span><strong>Cash to the provider</strong><br /><span className="muted">The provider confirms first; pay in LKR on arrival</span></span></label>
+          <label className="opt"><input type="radio" name="payMethod" value="CASH" checked={pay === "CASH"} onChange={() => setPay("CASH")} /><span><strong>Cash to the provider</strong><br /><span className="muted">The provider confirms first; {brand.cashNote.toLowerCase()}</span></span></label>
         </>}
       </fieldset>
       {q ? (

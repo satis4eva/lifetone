@@ -1,5 +1,5 @@
 // Pure money logic: quotes for guests and the split between provider, brand and platform.
-// All amounts are integers in minor units (LKR cents). No imports, so it is unit-testable with plain Node.
+// All amounts are integers in minor units (cents, pence). No imports, so it is unit-testable with plain Node.
 
 export type PayMethod = "CARD" | "DEPOSIT" | "CASH";
 

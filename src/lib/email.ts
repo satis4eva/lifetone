@@ -5,7 +5,7 @@ export type Sender = { id: string | null; name: string; emailFrom?: string | nul
 export const PLATFORM_SENDER: Sender = { id: null, name: "DBS Group Platform" };
 import nodemailer from "nodemailer";
 import { db } from "./db";
-import { lkr } from "./money";
+import { moneyFmt } from "./money";
 import { PAY_LABEL, UNIT_LABEL, fmtDate } from "./labels";
 
 interface Mail { to: string; subject: string; text: string; bookingRef?: string }
@@ -83,6 +83,7 @@ export type BookingEvent =
 /** Booking emails to the guest. Every one carries a link that signs them straight into the booking. */
 export async function emailGuest(brand: Brand, b: FullBooking, event: BookingEvent, manageUrl: string, extra = "") {
   const first = (b.guest.name || "there").split(" ")[0];
+  const lkr = moneyFmt(brand.currency);
   const u = UNIT_LABEL[b.listing.unit];
   const details = [
     `${b.listing.title}, ${b.listing.place}`,

@@ -3,7 +3,7 @@ import type { BookingStatus, Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getBrand } from "@/lib/brand";
 import { requireBrandAdmin } from "@/lib/auth";
-import { lkr } from "@/lib/money";
+import { moneyFmt } from "@/lib/money";
 import { PAY_LABEL, STATUS_LABEL, fmtDate } from "@/lib/labels";
 import { bookingAction } from "../actions";
 
@@ -12,6 +12,7 @@ const FILTERS: Array<BookingStatus | "ALL"> = ["ALL", "REQUESTED", "CONFIRMED", 
 export default async function PortalBookings({ searchParams }: { searchParams: { status?: string; q?: string } }) {
   await requireBrandAdmin();
   const brand = await getBrand();
+  const fmt = moneyFmt(brand.currency);
   const status = searchParams.status !== "ALL" && FILTERS.includes(searchParams.status as BookingStatus) ? (searchParams.status as BookingStatus) : undefined;
   const q = (searchParams.q || "").trim();
   const where: Prisma.BookingWhereInput = {
@@ -40,8 +41,8 @@ export default async function PortalBookings({ searchParams }: { searchParams: {
               <td>{b.guest.name}<div className="muted" style={{ fontSize: ".85rem" }}>{b.guest.email}</div></td>
               <td>{b.listing.title}</td>
               <td className="num">{fmtDate(b.startDate)}</td>
-              <td className="num">{lkr(b.total)}</td>
-              <td>{PAY_LABEL[b.payMethod]}{b.cashAmount > 0 && <div className="muted num" style={{ fontSize: ".85rem" }}>{lkr(b.cashAmount)} cash</div>}</td>
+              <td className="num">{fmt(b.total)}</td>
+              <td>{PAY_LABEL[b.payMethod]}{b.cashAmount > 0 && <div className="muted num" style={{ fontSize: ".85rem" }}>{fmt(b.cashAmount)} cash</div>}</td>
               <td><span className="pill">{STATUS_LABEL[b.status]}</span>{b.changeRequestDate && <div className="pill warn" style={{ marginTop: 4 }}>Change requested</div>}</td>
               <td>
                 <form action={bookingAction} className="row" style={{ gap: 6, flexWrap: "nowrap" }}>

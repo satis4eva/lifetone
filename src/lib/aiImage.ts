@@ -35,7 +35,7 @@ export async function generateImage(prompt: string): Promise<{ url: string } | {
 }
 
 /** A starting description built from the listing; the admin can edit it before generating. */
-export function suggestPrompt(l: { title: string; place: string; type: string }) {
+export function suggestPrompt(l: { title: string; place: string; type: string }, countryName = "Sri Lanka") {
   const scene: Record<string, string> = {
     STAY: "a welcoming guesthouse or villa exterior with tropical plants",
     DRIVER: "a clean modern car or van on a scenic road",
@@ -45,5 +45,5 @@ export function suggestPrompt(l: { title: string; place: string; type: string })
     PACKAGE: "an inviting holiday activity scene",
     WELLNESS: "a calm Ayurveda spa treatment room with natural materials",
   };
-  return `Bright, natural travel photograph style image for "${l.title}" in ${l.place}, Sri Lanka: ${scene[l.type] ?? "a Sri Lankan travel scene"}. Daylight, fresh tropical colours, no text, no logos, no recognisable people.`;
+  return `Bright, natural travel photograph style image for "${l.title}" in ${l.place}, ${countryName}: ${scene[l.type] ?? `a ${countryName} travel scene`}. Daylight, fresh tropical colours, no text, no logos, no recognisable people.`;
 }

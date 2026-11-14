@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { lkr } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 import { applyPaymentResult } from "@/lib/bookings";
 import { isMockAllowed } from "@/lib/payments";
 
@@ -25,7 +25,7 @@ export default async function MockPay({ searchParams }: { searchParams: { refere
     <form action={settle} className="card stack" style={{ maxWidth: 480 }}>
       <h1>Test payment</h1>
       <p className="muted" style={{ margin: 0 }}>This page stands in for the DPayments checkout while PAYMENT_GATEWAY is "mock". No money moves.</p>
-      <p className="num" style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>{lkr(p.amount)}</p>
+      <p className="num" style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>{formatMoney(p.amount, p.currency)}</p>
       <p className="muted" style={{ margin: 0 }}>Booking {p.booking.ref} · status {p.status}</p>
       <input type="hidden" name="reference" value={p.reference} />
       <div className="row">

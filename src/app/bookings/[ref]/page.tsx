@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { getBrand } from "@/lib/brand";
 import { currentUser } from "@/lib/auth";
-import { lkr } from "@/lib/money";
+import { moneyFmt } from "@/lib/money";
 import { PAY_LABEL, STATUS_LABEL, UNIT_LABEL, fmtDate } from "@/lib/labels";
 import { cancelBooking, requestDateChange } from "@/lib/bookings";
 
@@ -24,7 +24,8 @@ async function loadMine(ref: string) {
 }
 
 export default async function ManageBooking({ params, searchParams }: { params: { ref: string }; searchParams: { done?: string } }) {
-  const { b } = await loadMine(params.ref);
+  const { brand: br, b } = await loadMine(params.ref);
+  const fmt = moneyFmt(br.currency);
   if (!b) notFound();
   const active = ["PENDING_PAYMENT", "REQUESTED", "CONFIRMED"].includes(b.status);
   const canCancel = active && b.startDate.getTime() - Date.now() > FREE_CANCEL_HOURS * 3_600_000;
@@ -65,9 +66,9 @@ export default async function ManageBooking({ params, searchParams }: { params: 
         <div className="breakdown num">
           <span>Start</span><span>{fmtDate(b.startDate)}</span>
           <span>Quantity</span><span>{b.quantity} {UNIT_LABEL[b.listing.unit].many}</span>
-          <span>Total</span><span>{lkr(b.total)}</span>
-          <span>Paid by card</span><span>{lkr(b.onlineAmount)}</span>
-          {b.cashAmount > 0 && <><span>Cash due on the day</span><span>{lkr(b.cashAmount)}</span></>}
+          <span>Total</span><span>{fmt(b.total)}</span>
+          <span>Paid by card</span><span>{fmt(b.onlineAmount)}</span>
+          {b.cashAmount > 0 && <><span>Cash due on the day</span><span>{fmt(b.cashAmount)}</span></>}
           <span>Payment</span><span>{PAY_LABEL[b.payMethod]}</span>
         </div>
         {b.changeRequestDate && <span className="pill warn">Date change to {fmtDate(b.changeRequestDate)} requested</span>}
@@ -81,7 +82,7 @@ export default async function ManageBooking({ params, searchParams }: { params: 
             <button className="btn ghost" type="submit">Request date change</button>
           </form>
           {canCancel ? (
-            <form action={cancel}><button className="btn ghost" type="submit">Cancel booking{b.onlineAmount ? ` and refund ${lkr(b.onlineAmount)}` : ""}</button></form>
+            <form action={cancel}><button className="btn ghost" type="submit">Cancel booking{b.onlineAmount ? ` and refund ${fmt(b.onlineAmount)}` : ""}</button></form>
           ) : (
             <p className="muted" style={{ margin: 0 }}>Free cancellation ends {FREE_CANCEL_HOURS} hours before the start. Message the provider below if you need to cancel.</p>
           )}

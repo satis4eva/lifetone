@@ -5,13 +5,16 @@ import { getBrand } from "@/lib/brand";
 import { parseRupees } from "@/lib/money";
 import { TYPE_LABEL } from "@/lib/labels";
 import { saveImage } from "@/lib/media";
+import { countryOf } from "@/lib/country";
 
 export const metadata = { title: "List your service" };
 
 const DEFAULT_UNIT: Record<ListingType, PriceUnit> = { STAY: "NIGHT", DRIVER: "DAY", TRANSPORT: "SEAT", GUIDE: "PERSON", SHARE: "WEEK", PACKAGE: "PERSON", WELLNESS: "SESSION" };
 const UNITS: PriceUnit[] = ["NIGHT", "DAY", "SEAT", "PERSON", "WEEK", "SESSION"];
 
-export default function Join({ searchParams }: { searchParams: { sent?: string; error?: string } }) {
+export default async function Join({ searchParams }: { searchParams: { sent?: string; error?: string } }) {
+  const brandNow = await getBrand();
+  const country = countryOf(brandNow.country);
   async function apply(form: FormData) {
     "use server";
     const brand = await getBrand();
@@ -19,7 +22,7 @@ export default function Join({ searchParams }: { searchParams: { sent?: string; 
     const type = s("type") as ListingType;
     const unit = (UNITS.includes(s("unit") as PriceUnit) ? s("unit") : DEFAULT_UNIT[type]) as PriceUnit;
     const price = parseRupees(s("price"));
-    if (!(type in TYPE_LABEL) || !s("business") || !s("title") || !s("place") || !s("licence") || !s("phone") || !s("email") || !(price >= 10000)) {
+    if (!(type in TYPE_LABEL) || !s("business") || !s("title") || !s("place") || !s("licence") || !s("phone") || !s("email") || !(price >= 100)) {
       redirect("/providers/join?error=1");
     }
     const photo = form.get("photo");
@@ -52,18 +55,18 @@ export default function Join({ searchParams }: { searchParams: { sent?: string; 
     <div className="stack" style={{ maxWidth: 820 }}>
       <div><h1>List your service</h1><p className="muted">Guesthouses, villas, drivers, tuk-tuks, guides, coach and shuttle companies, spas and wellness centres, room shares and tour operators. Free to join; commission only when you get a booking.</p></div>
       {searchParams.error === "photo" && <p className="error">The photo must be a JPG, PNG or WebP under 5 MB.</p>}
-      {searchParams.error && searchParams.error !== "photo" && <p className="error">Fill in every field, with a price of at least Rs 100.</p>}
+      {searchParams.error && searchParams.error !== "photo" && <p className="error">Fill in every field, with a price above zero.</p>}
       <form action={apply} className="card form">
         <label>What do you offer?<select name="type">{(Object.keys(TYPE_LABEL) as ListingType[]).map(t => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}</select></label>
         <label>Your name or business<input name="business" required /></label>
         <label className="full">Listing title<input name="title" required placeholder="e.g. Airport shuttle, Colombo to Kandy" /></label>
-        <label>Town<input name="place" required placeholder="e.g. Negombo" /></label>
-        <label>Price in LKR<input name="price" inputMode="numeric" required placeholder="12,000" /></label>
+        <label>Town<input name="place" required placeholder={country.townPlaceholder} /></label>
+        <label>Price in {brandNow.currency}<input name="price" inputMode="decimal" required placeholder={brandNow.currency === "LKR" ? "12,000" : "45.00"} /></label>
         <label>Priced per<select name="unit" defaultValue="">
           <option value="">Usual for this type</option><option value="NIGHT">Night</option><option value="DAY">Day</option><option value="SEAT">Seat</option><option value="PERSON">Person</option><option value="WEEK">Week</option><option value="SESSION">Session</option>
         </select></label>
-        <label>Licence or registration number (SLTDA / NTC / Ayurveda)<input name="licence" required /></label>
-        <label>Mobile (WhatsApp)<input name="phone" type="tel" required placeholder="+94 7X XXX XXXX" /></label>
+        <label>{country.licenceLabel}<input name="licence" required /></label>
+        <label>Mobile (WhatsApp)<input name="phone" type="tel" required placeholder={country.phonePlaceholder} /></label>
         <label>Email<input name="email" type="email" required /></label>
         <label className="full">Description<textarea name="description" rows={3} required placeholder="What guests get, languages, what's included" /></label>
         <label className="check full"><input type="checkbox" name="confirm" /> I want to confirm each booking myself before it's final</label>

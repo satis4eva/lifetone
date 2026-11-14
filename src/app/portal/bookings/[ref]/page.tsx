@@ -3,7 +3,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getBrand } from "@/lib/brand";
 import { requireBrandAdmin } from "@/lib/auth";
-import { lkr } from "@/lib/money";
+import { moneyFmt } from "@/lib/money";
 import { split } from "@/lib/pricing";
 import { PAY_LABEL, STATUS_LABEL, UNIT_LABEL, fmtDate } from "@/lib/labels";
 import { bookingAction, replyToGuest } from "../../actions";
@@ -11,6 +11,7 @@ import { bookingAction, replyToGuest } from "../../actions";
 export default async function PortalBooking({ params }: { params: { ref: string } }) {
   await requireBrandAdmin();
   const brand = await getBrand();
+  const fmt = moneyFmt(brand.currency);
   const b = await db.booking.findFirst({
     where: { brandId: brand.id, ref: params.ref },
     include: { listing: { include: { provider: true } }, guest: true, messages: { orderBy: { createdAt: "asc" } }, payments: true },
@@ -29,13 +30,13 @@ export default async function PortalBooking({ params }: { params: { ref: string 
             <span>Start</span><span>{fmtDate(b.startDate)}</span>
             <span>Quantity</span><span>{b.quantity} {UNIT_LABEL[b.listing.unit].many}</span>
             <span>Payment</span><span>{PAY_LABEL[b.payMethod]}</span>
-            <span>Guest total</span><span>{lkr(b.total)}</span>
-            <span>Paid online</span><span>{lkr(b.onlineAmount)}</span>
-            <span>Cash to provider</span><span>{lkr(b.cashAmount)}</span>
-            <span>Provider settlement</span><span>{s.providerSettlement < 0 ? `Owes ${lkr(-s.providerSettlement)}` : lkr(s.providerSettlement)}</span>
-            <span>Your revenue</span><span>{lkr(s.brandRevenue)}</span>
-            <span>Platform fee ({Number(b.platformFeePct)}%)</span><span>{lkr(s.platformFee)}</span>
-            <span className="total">Your net</span><span className="total">{lkr(s.brandNet)}</span>
+            <span>Guest total</span><span>{fmt(b.total)}</span>
+            <span>Paid online</span><span>{fmt(b.onlineAmount)}</span>
+            <span>Cash to provider</span><span>{fmt(b.cashAmount)}</span>
+            <span>Provider settlement</span><span>{s.providerSettlement < 0 ? `Owes ${fmt(-s.providerSettlement)}` : fmt(s.providerSettlement)}</span>
+            <span>Your revenue</span><span>{fmt(s.brandRevenue)}</span>
+            <span>Platform fee ({Number(b.platformFeePct)}%)</span><span>{fmt(s.platformFee)}</span>
+            <span className="total">Your net</span><span className="total">{fmt(s.brandNet)}</span>
           </div>
           <form action={bookingAction} className="row">
             <input type="hidden" name="id" value={b.id} />

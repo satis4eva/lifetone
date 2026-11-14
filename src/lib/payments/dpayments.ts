@@ -22,7 +22,7 @@ export const dpaymentsGateway: PaymentGateway = {
       body: JSON.stringify({
         merchant_reference: req.reference,
         amount: req.amount,          // minor units
-        currency: req.currency,      // settle in LKR
+        currency: req.currency,      // the brand's currency
         customer_email: req.customerEmail,
         description: req.description,
         return_url: req.returnUrl,

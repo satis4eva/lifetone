@@ -5,6 +5,7 @@ import { TYPE_LABEL, UNIT_LABEL } from "@/lib/labels";
 import { listingAction, listingImage } from "../actions";
 import ListingImage from "@/components/ListingImage";
 import { aiImagesEnabled, suggestPrompt } from "@/lib/aiImage";
+import { countryOf } from "@/lib/country";
 
 const STATUS = { PENDING: ["Awaiting check", "warn"], LIVE: ["Live", ""], PAUSED: ["Paused", "warn"], REJECTED: ["Rejected", "bad"] } as const;
 
@@ -24,7 +25,7 @@ export default async function PortalListings({ searchParams }: { searchParams: {
       </div>
       {searchParams.error && <p className="error" role="alert" style={{ margin: 0 }}>{searchParams.error}</p>}
       <div className="table-wrap"><table>
-        <thead><tr><th>Photo</th><th>Listing</th><th>Provider</th><th>Price (LKR)</th><th>Status</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Photo</th><th>Listing</th><th>Provider</th><th>Price ({brand.currency})</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>{listings.map(l => (
           <tr key={l.id} id={`l-${l.id}`}>
             <td style={{ minWidth: 250 }}>
@@ -46,7 +47,7 @@ export default async function PortalListings({ searchParams }: { searchParams: {
                 <form action={listingImage} className="stack" style={{ gap: 6, marginTop: 6 }}>
                   <input type="hidden" name="id" value={l.id} />
                   <input type="hidden" name="action" value="ai" />
-                  <textarea name="prompt" rows={4} defaultValue={suggestPrompt(l)} aria-label={`AI image description for ${l.title}`} style={{ fontSize: ".85rem", maxWidth: 320 }} />
+                  <textarea name="prompt" rows={4} defaultValue={suggestPrompt(l, countryOf(brand.country).name)} aria-label={`AI image description for ${l.title}`} style={{ fontSize: ".85rem", maxWidth: 320 }} />
                   <div><button className="btn small" type="submit" disabled={!aiImagesEnabled()}>{aiImagesEnabled() ? "Generate and save (takes up to a minute)" : "Needs an OpenAI API key"}</button></div>
                 </form>
               </details>

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requirePlatformAdmin } from "@/lib/auth";
 import { saveImage } from "@/lib/media";
 import { HEX, PRESETS, isPreset, FONT_PAIRS } from "@/lib/theme";
+import { COUNTRIES, isCountry } from "@/lib/country";
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -22,8 +23,9 @@ export async function createBrand(form: FormData) {
   if (!EMAIL.test(admin)) back("Enter the brand admin's email.");
   if (await db.brand.findUnique({ where: { slug } })) back("That short name is taken.");
   const p = PRESETS[preset];
+  const country = isCountry(str(form, "country")) ? str(form, "country") : "LK";
   const brand = await db.brand.create({
-    data: { name, slug, bookingPrefix: prefix, domains: parseDomains(str(form, "domains")), tagline: str(form, "tagline"), themePreset: preset, color: p.color, ctaColor: p.ctaColor, bgColor: p.bgColor, fontPair: p.fontPair, platformFeePct: Number(str(form, "platformFeePct")) || 10 },
+    data: { country, currency: COUNTRIES[country].currency, settleCurrency: COUNTRIES[country].currency, name, slug, bookingPrefix: prefix, domains: parseDomains(str(form, "domains")), tagline: str(form, "tagline"), themePreset: preset, color: p.color, ctaColor: p.ctaColor, bgColor: p.bgColor, fontPair: p.fontPair, platformFeePct: Number(str(form, "platformFeePct")) || 10 },
   });
   await db.user.create({ data: { brandId: brand.id, email: admin, name: `${name} admin`, role: "BRAND_ADMIN" } });
   revalidatePath("/platform");
@@ -43,6 +45,11 @@ export async function saveBrand(form: FormData) {
     heroText: str(form, "heroText") || null,
     active: form.get("active") === "on",
   };
+  const country = str(form, "country");
+  if (isCountry(country) && country !== b!.country) {
+    // Prices are stored in the brand currency, so a currency change needs empty prices or a manual review.
+    Object.assign(data, { country, currency: COUNTRIES[country].currency, settleCurrency: COUNTRIES[country].currency });
+  }
   const fee = Number(str(form, "platformFeePct"));
   if (Number.isFinite(fee) && fee >= 0 && fee <= 50) data.platformFeePct = fee;
   const preset = str(form, "applyPreset");

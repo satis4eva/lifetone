@@ -2,7 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { getBrand } from "@/lib/brand";
 import { requireBrandAdmin } from "@/lib/auth";
-import { lkr } from "@/lib/money";
+import { moneyFmt } from "@/lib/money";
 import { split } from "@/lib/pricing";
 import { TYPE_LABEL, fmtDate } from "@/lib/labels";
 import { bookingAction, listingAction } from "./actions";
@@ -10,6 +10,7 @@ import { bookingAction, listingAction } from "./actions";
 export default async function Overview() {
   await requireBrandAdmin();
   const brand = await getBrand();
+  const fmt = moneyFmt(brand.currency);
   const [active, requests, changes, pending] = await Promise.all([
     db.booking.findMany({ where: { brandId: brand.id, status: { in: ["CONFIRMED", "COMPLETED"] } } }),
     db.booking.findMany({ where: { brandId: brand.id, status: "REQUESTED" }, include: { listing: true, guest: true }, orderBy: { createdAt: "asc" } }),
@@ -26,15 +27,15 @@ export default async function Overview() {
     <div className="stack">
       <div className="tiles">
         <div className="card"><div className="muted">Confirmed bookings</div><div className="big num">{active.length}</div></div>
-        <div className="card"><div className="muted">Booking value</div><div className="big num">{lkr(t.gmv)}</div></div>
-        <div className="card"><div className="muted">Your revenue</div><div className="big num">{lkr(t.net)}</div><div className="muted" style={{ fontSize: ".85rem" }}>after platform fee</div></div>
+        <div className="card"><div className="muted">Booking value</div><div className="big num">{fmt(t.gmv)}</div></div>
+        <div className="card"><div className="muted">Your revenue</div><div className="big num">{fmt(t.net)}</div><div className="muted" style={{ fontSize: ".85rem" }}>after platform fee</div></div>
         <div className="card"><div className="muted">Needs action</div><div className="big num" style={{ color: todo ? "var(--warn)" : undefined }}>{todo}</div></div>
       </div>
       <div className="card stack" style={{ gap: 0 }}>
         <h2 style={{ marginBottom: 8 }}>Needs your action</h2>
         {requests.map(b => (
           <form key={b.id} action={bookingAction} className="row" style={{ justifyContent: "space-between", borderTop: "1px solid var(--line)", padding: "10px 0" }}>
-            <div><strong>Booking request <Link href={`/portal/bookings/${b.ref}`}>{b.ref}</Link></strong><div className="muted num">{b.guest.name} · {b.listing.title} · from {fmtDate(b.startDate)} · {lkr(b.total)}</div></div>
+            <div><strong>Booking request <Link href={`/portal/bookings/${b.ref}`}>{b.ref}</Link></strong><div className="muted num">{b.guest.name} · {b.listing.title} · from {fmtDate(b.startDate)} · {fmt(b.total)}</div></div>
             <input type="hidden" name="id" value={b.id} />
             <div className="row"><button className="btn small" name="action" value="confirm">Confirm</button><button className="btn ghost small" name="action" value="decline">Decline</button></div>
           </form>

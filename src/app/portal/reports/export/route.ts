@@ -7,7 +7,7 @@ import { monthlyReport, validMonth, type MonthlyReport } from "@/lib/reports";
 export const dynamic = "force-dynamic";
 
 const rupees = (c: number) => Math.round(c) / 100;
-const rs = (c: number) => "Rs " + (Math.round(c) / 100).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+import { formatMoney } from "@/lib/money";
 
 export async function GET(req: Request) {
   await requireBrandAdmin();
@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const month = validMonth(url.searchParams.get("month") ?? undefined);
   const format = url.searchParams.get("format") === "pdf" ? "pdf" : "xlsx";
-  const report = await monthlyReport(brand.id, month);
+  const report = await monthlyReport(brand.id, month, brand.currency);
   const base = `${brand.slug}-income-${month}`;
   if (format === "xlsx") {
     return new Response(await toExcel(brand.name, brand.settleCurrency, report), {
@@ -39,7 +39,7 @@ async function toExcel(brandName: string, currency: string, r: MonthlyReport): P
   const s = wb.addWorksheet("Summary");
   s.columns = [{ width: 34 }, { width: 20 }];
   s.addRow([`${brandName}: income report, ${r.label}`]).font = { bold: true, size: 14 };
-  s.addRow([`Bookings made in ${r.label}, confirmed or completed. Amounts in LKR; payouts settled in ${currency}.`]);
+  s.addRow([`Bookings made in ${r.label}, confirmed or completed. Amounts in ${r.currency}; payouts settled in ${currency}.`]);
   s.addRow([]);
   const lines: Array<[string, number, boolean?]> = [
     ["Bookings", r.totals.bookings, false],
@@ -94,6 +94,7 @@ async function toExcel(brandName: string, currency: string, r: MonthlyReport): P
 }
 
 function toPdf(brandName: string, r: MonthlyReport): Promise<Uint8Array> {
+  const rs = (c: number) => formatMoney(c, r.currency);
   return new Promise(resolve => {
     const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 36 });
     const chunks: Buffer[] = [];

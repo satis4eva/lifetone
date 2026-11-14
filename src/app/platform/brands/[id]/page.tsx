@@ -3,13 +3,14 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requirePlatformAdmin } from "@/lib/auth";
 import { FONT_PAIRS, PRESETS } from "@/lib/theme";
+import { COUNTRIES } from "@/lib/country";
 import { addBrandAdmin, saveBrand } from "../../actions";
 
 export const metadata = { title: "Edit brand" };
 
 export default async function EditBrand({ params, searchParams }: { params: { id: string }; searchParams: { saved?: string; created?: string; error?: string } }) {
   await requirePlatformAdmin();
-  const b = await db.brand.findUnique({ where: { id: params.id }, include: { users: { where: { role: "BRAND_ADMIN" }, select: { email: true } } } });
+  const b = await db.brand.findUnique({ where: { id: params.id }, include: { users: { where: { role: "BRAND_ADMIN" }, select: { email: true } }, _count: { select: { listings: true, bookings: true } } } });
   if (!b) notFound();
   const site = b.domains.find(d => !d.includes("localhost"));
   return (
@@ -27,7 +28,9 @@ export default async function EditBrand({ params, searchParams }: { params: { id
         <h1 className="full">{b.name}</h1>
 
         <h2 className="full">Identity</h2>
+        <label>Country<select name="country" defaultValue={b.country}>{Object.entries(COUNTRIES).map(([k, c]) => <option key={k} value={k}>{c.name} ({c.currency})</option>)}</select></label>
         <label>Brand name<input name="name" defaultValue={b.name} required /></label>
+        {(b._count.listings > 0 || b._count.bookings > 0) && <p className="muted full" style={{ margin: 0, fontSize: ".9rem" }}>Changing the country also changes the currency ({b.currency} now). Existing prices are not converted, so review every listing price afterwards. This brand has {b._count.listings} listings and {b._count.bookings} bookings.</p>}
         <label>Tagline<input name="tagline" defaultValue={b.tagline} /></label>
         <label className="full">Domains (comma separated)<input name="domains" defaultValue={b.domains.join(", ")} /></label>
         <div className="full row" style={{ alignItems: "flex-end" }}>

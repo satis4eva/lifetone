@@ -64,12 +64,12 @@ export async function createBooking(_prev: string | null, form: FormData): Promi
 
   const gw = gateway();
   const reference = `${ref}-${randomBytes(4).toString("hex")}`;
-  await db.payment.create({ data: { bookingId: booking.id, gateway: gw.name, reference, amount: q.onlineAmount } });
+  await db.payment.create({ data: { bookingId: booking.id, gateway: gw.name, reference, amount: q.onlineAmount, currency: brand.currency } });
   const base = await baseUrl();
   let redirectUrl: string;
   try {
     ({ redirectUrl } = await gw.createCheckout({
-      reference, bookingRef: ref, amount: q.onlineAmount, currency: "LKR", customerEmail: email,
+      reference, bookingRef: ref, amount: q.onlineAmount, currency: brand.currency, customerEmail: email,
       description: `${brand.name} booking ${ref}: ${listing.title}`,
       returnUrl: `${base}/booked/${ref}`, webhookUrl: `${base}/api/payments/webhook`,
     }));

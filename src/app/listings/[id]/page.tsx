@@ -2,15 +2,17 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { getBrand } from "@/lib/brand";
-import { lkr, pct } from "@/lib/money";
+import { moneyFmt, pct } from "@/lib/money";
 import { TYPE_LABEL, UNIT_LABEL } from "@/lib/labels";
 import BookingForm from "./BookingForm";
+import { countryOf } from "@/lib/country";
 import ListingImage from "@/components/ListingImage";
 
 export const dynamic = "force-dynamic";
 
 export default async function ListingPage({ params }: { params: { id: string } }) {
   const brand = await getBrand();
+  const fmt = moneyFmt(brand.currency);
   const l = await db.listing.findFirst({ where: { id: params.id, brandId: brand.id, status: "LIVE" }, include: { provider: true } });
   if (!l) notFound();
   return (
@@ -30,10 +32,10 @@ export default async function ListingPage({ params }: { params: { id: string } }
           </div>
         </div>
         <div className="card stack">
-          <div className="num" style={{ fontSize: "1.3rem", fontWeight: 700 }}>{lkr(l.price)} <span className="muted" style={{ fontSize: "1rem", fontWeight: 400 }}>/ {UNIT_LABEL[l.unit].one}</span></div>
+          <div className="num" style={{ fontSize: "1.3rem", fontWeight: 700 }}>{fmt(l.price)} <span className="muted" style={{ fontSize: "1rem", fontWeight: 400 }}>/ {UNIT_LABEL[l.unit].one}</span></div>
           <BookingForm
             listing={{ id: l.id, price: l.price, unit: l.unit, type: l.type }}
-            brand={{ serviceFeePct: pct(brand.serviceFeePct), depositPct: brand.depositPct, allowCash: brand.allowCash }}
+            brand={{ serviceFeePct: pct(brand.serviceFeePct), depositPct: brand.depositPct, allowCash: brand.allowCash, currency: brand.currency, cashNote: countryOf(brand.country).cashNote }}
           />
         </div>
       </div>
