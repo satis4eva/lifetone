@@ -56,6 +56,17 @@ Run the pricing tests with `npm test`.
 
 `docker-compose.yml` runs PostgreSQL and the app with no public ports. The VPS's existing Caddy proxy (InvoiceFlow project) forwards `lifetone.online` to the `lifetone-web` container over the shared `invoiceflow_default` network. Secrets (`DB_PASSWORD`, `SESSION_SECRET`, `ADMIN_LOGIN_TOKEN`, …) are set as the project's environment variables, never in the repo.
 
+The proxy rule lives on the server in `/root/invoiceflow/deploy/sites/lifetone.caddy` (outside InvoiceFlow's code, so InvoiceFlow updates keep it):
+
+```
+lifetone.online, www.lifetone.online {
+	encode gzip
+	reverse_proxy lifetone-web:3000
+}
+```
+
+After changing it, run `docker compose restart caddy` in `/root/invoiceflow`.
+
 While `DEMO_MODE=true`, card payments are simulated and a banner says so. For real payments set `PAYMENT_GATEWAY=dpayments`, the DPayments keys and `DEMO_MODE=false`.
 
 To redeploy after pushing to `main`, rebuild the project (Hostinger Docker Manager → lifetone → Update, or `docker compose up -d --build`).
