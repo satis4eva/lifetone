@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { getBrand } from "@/lib/brand";
 import { lkr } from "@/lib/money";
 import { TYPE_LABEL, UNIT_LABEL } from "@/lib/labels";
-import ListingArt from "@/components/ListingArt";
+import ListingImage from "@/components/ListingImage";
 
 export const dynamic = "force-dynamic";
 
@@ -87,7 +87,7 @@ export default async function Explore({ searchParams }: { searchParams: { q?: st
         <div className="grid">
           {listings.map(l => (
             <Link key={l.id} href={`/listings/${l.id}`} className="listing">
-              <div className="art"><ListingArt type={l.type} /><span className="tag">{SHORT[l.type]}</span></div>
+              <div className="art"><ListingImage type={l.type} imageUrl={l.imageUrl} alt="" /><span className="tag">{SHORT[l.type]}</span></div>
               <div className="l-body">
                 <span className="place">{l.place}</span>
                 <h3>{l.title}</h3>

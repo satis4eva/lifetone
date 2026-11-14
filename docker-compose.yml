@@ -43,6 +43,9 @@ services:
       PLATFORM_ADMIN_EMAIL: ${PLATFORM_ADMIN_EMAIL}
       BRAND_ADMIN_EMAIL: ${BRAND_ADMIN_EMAIL}
       ADMIN_LOGIN_TOKEN: ${ADMIN_LOGIN_TOKEN:-}
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - lifetone-uploads:/app/uploads
     networks:
       - default
       - proxy
@@ -54,3 +57,4 @@ networks:
 
 volumes:
   lifetone-db-data:
+  lifetone-uploads:

@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install --no-audit --no-fund
 COPY . .
-RUN npx prisma generate && npx next build
+RUN npx prisma generate && npx next build && mkdir -p /app/uploads
 ENV NODE_ENV=production
 EXPOSE 3000
 # Creates/updates tables, seeds Lifetone if empty (safe to re-run), then starts the app.

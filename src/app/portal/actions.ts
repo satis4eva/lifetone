@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { getBrand } from "@/lib/brand";
 import { requireBrandAdmin } from "@/lib/auth";
 import { parseRupees } from "@/lib/money";
+import { cleanImageLink, saveImage } from "@/lib/media";
+import { redirect } from "next/navigation";
 import { cancelBooking, completeBooking, confirmBooking, notify, resolveDateChange } from "@/lib/bookings";
 
 async function ctx() {
@@ -58,6 +60,32 @@ export async function listingAction(form: FormData) {
     if (price >= 10000) await db.listing.update({ where: { id: l.id }, data: { price } });
   }
   revalidatePath("/portal/listings");
+}
+
+/** Sets a listing's photo from an uploaded file or an https link, or removes it. */
+export async function listingImage(form: FormData) {
+  const brand = await ctx();
+  const l = await db.listing.findFirst({ where: { id: str(form, "id"), brandId: brand.id } });
+  if (!l) return;
+  const back = (msg?: string) => redirect(`/portal/listings${msg ? `?error=${encodeURIComponent(msg)}&id=${l.id}` : ""}#l-${l.id}`);
+  if (str(form, "action") === "removeImage") {
+    await db.listing.update({ where: { id: l.id }, data: { imageUrl: null } });
+  } else {
+    const file = form.get("file");
+    const link = str(form, "link");
+    let url: string | null = null;
+    if (file instanceof File && file.size > 0) {
+      const saved = await saveImage(file);
+      if ("error" in saved) back(saved.error);
+      else url = saved.url;
+    } else if (link) {
+      url = cleanImageLink(link);
+      if (!url) back("Paste a full image link starting with https://");
+    } else back("Choose an image file or paste an image link.");
+    await db.listing.update({ where: { id: l.id }, data: { imageUrl: url } });
+  }
+  revalidatePath("/", "layout");
+  back();
 }
 
 const AUDIENCES: Audience[] = ["TOURISTS", "PROVIDERS", "DRIVERS_TRANSPORT", "AGENCIES"];

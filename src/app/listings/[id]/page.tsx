@@ -5,7 +5,7 @@ import { getBrand } from "@/lib/brand";
 import { lkr, pct } from "@/lib/money";
 import { TYPE_LABEL, UNIT_LABEL } from "@/lib/labels";
 import BookingForm from "./BookingForm";
-import ListingArt from "@/components/ListingArt";
+import ListingImage from "@/components/ListingImage";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ export default async function ListingPage({ params }: { params: { id: string } }
       <div className="detail">
         <div className="stack">
           <div className="detail-hero">
-            <ListingArt type={l.type} />
+            <ListingImage type={l.type} imageUrl={l.imageUrl} alt={l.title} />
             <div><span className="tag" style={{ position: "static" }}>{TYPE_LABEL[l.type]}</span><h1 style={{ color: "#fff", marginTop: 8 }}>{l.title}</h1><div style={{ fontWeight: 700 }}>{l.place}</div></div>
           </div>
           <div className="card stack" style={{ gap: 8 }}>

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { getBrand } from "@/lib/brand";
 import { parseRupees } from "@/lib/money";
 import { TYPE_LABEL } from "@/lib/labels";
+import { saveImage } from "@/lib/media";
 
 export const metadata = { title: "List your service" };
 
@@ -21,12 +22,19 @@ export default function Join({ searchParams }: { searchParams: { sent?: string; 
     if (!(type in TYPE_LABEL) || !s("business") || !s("title") || !s("place") || !s("licence") || !s("phone") || !s("email") || !(price >= 10000)) {
       redirect("/providers/join?error=1");
     }
+    const photo = form.get("photo");
+    let imageUrl: string | null = null;
+    if (photo instanceof File && photo.size > 0) {
+      const saved = await saveImage(photo);
+      if ("error" in saved) redirect("/providers/join?error=photo");
+      else imageUrl = saved.url;
+    }
     const provider = await db.provider.create({
       data: { brandId: brand.id, business: s("business"), type, licenceNo: s("licence"), phone: s("phone"), email: s("email").toLowerCase() },
     });
     await db.listing.create({
       data: {
-        brandId: brand.id, providerId: provider.id, type, title: s("title"), place: s("place"), description: s("description"),
+        brandId: brand.id, providerId: provider.id, type, title: s("title"), place: s("place"), description: s("description"), imageUrl,
         price, unit, needsConfirmation: type === "PACKAGE" || form.get("confirm") === "on",
       },
     });
@@ -43,7 +51,8 @@ export default function Join({ searchParams }: { searchParams: { sent?: string; 
   return (
     <div className="stack" style={{ maxWidth: 820 }}>
       <div><h1>List your service</h1><p className="muted">Guesthouses, villas, drivers, tuk-tuks, guides, coach and shuttle companies, spas and wellness centres, room shares and tour operators. Free to join; commission only when you get a booking.</p></div>
-      {searchParams.error && <p className="error">Fill in every field, with a price of at least Rs 100.</p>}
+      {searchParams.error === "photo" && <p className="error">The photo must be a JPG, PNG or WebP under 5 MB.</p>}
+      {searchParams.error && searchParams.error !== "photo" && <p className="error">Fill in every field, with a price of at least Rs 100.</p>}
       <form action={apply} className="card form">
         <label>What do you offer?<select name="type">{(Object.keys(TYPE_LABEL) as ListingType[]).map(t => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}</select></label>
         <label>Your name or business<input name="business" required /></label>
@@ -58,7 +67,8 @@ export default function Join({ searchParams }: { searchParams: { sent?: string; 
         <label>Email<input name="email" type="email" required /></label>
         <label className="full">Description<textarea name="description" rows={3} required placeholder="What guests get, languages, what's included" /></label>
         <label className="check full"><input type="checkbox" name="confirm" /> I want to confirm each booking myself before it's final</label>
-        <p className="muted full" style={{ margin: 0 }}>We'll ask for a photo of your ID and licence when we contact you.</p>
+        <label className="full">Photo of your place, vehicle or service (optional)<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" /></label>
+        <p className="muted full" style={{ margin: 0 }}>Landscape photos work best (about 1200 × 800 px, under 5 MB). We'll ask for a photo of your ID and licence when we contact you.</p>
         <div className="full"><button className="btn" type="submit">Submit for approval</button></div>
       </form>
     </div>
