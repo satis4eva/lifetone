@@ -36,6 +36,7 @@ model Brand {
   serviceFeePct    Decimal   @default(3) @db.Decimal(5, 2)  // charged to guests
   platformFeePct   Decimal   @default(10) @db.Decimal(5, 2) // DBS Group's share of brand revenue
   allowCash        Boolean   @default(true)
+  providerSignup   Boolean   @default(true) // false = no "For providers" link and /providers/join is off
   depositPct       Int       @default(20)
   settleCurrency   String    @default("LKR")
   createdAt        DateTime  @default(now())

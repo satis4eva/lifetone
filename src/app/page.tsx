@@ -105,7 +105,7 @@ export default async function Explore({ searchParams }: { searchParams: { q?: st
 
       {!filtered && (
         <section className="promo">
-          <div className="dark"><h2>Run a guesthouse, van or tour?</h2><p>List your service free. Licensed drivers, guides, transport companies and stays get bookings from travellers worldwide, and pay commission only when booked.</p><Link className="btn sun" href="/providers/join">List your service</Link></div>
+          <div className="dark"><h2>Need something bespoke?</h2><p>A custom route, a bigger group or dates that don&apos;t fit? Tell us what you need and we&apos;ll come back with a price. Nothing to pay until you accept.</p><Link className="btn sun" href="/quote">Request a quote</Link></div>
           <div className="soft"><h2>Pay your way</h2><p>{brand.allowCash ? "Card now, a small deposit with the rest in cash, or cash on the day." : "Pay securely by card."} Free cancellation up to 48 hours before.</p><Link className="btn" href="#results">Start exploring</Link></div>
         </section>
       )}

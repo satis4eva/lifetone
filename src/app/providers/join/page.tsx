@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { ListingType, PriceUnit } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getBrand } from "@/lib/brand";
@@ -14,10 +14,12 @@ const UNITS: PriceUnit[] = ["NIGHT", "DAY", "SEAT", "PERSON", "WEEK", "SESSION"]
 
 export default async function Join({ searchParams }: { searchParams: { sent?: string; error?: string } }) {
   const brandNow = await getBrand();
+  if (!brandNow.providerSignup) notFound();
   const country = countryOf(brandNow.country);
   async function apply(form: FormData) {
     "use server";
     const brand = await getBrand();
+    if (!brand.providerSignup) notFound();
     const s = (k: string) => String(form.get(k) ?? "").trim();
     const type = s("type") as ListingType;
     const unit = (UNITS.includes(s("unit") as PriceUnit) ? s("unit") : DEFAULT_UNIT[type]) as PriceUnit;

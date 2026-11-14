@@ -76,6 +76,7 @@ export async function saveBrand(form: FormData) {
     heroTitle: str(form, "heroTitle") || null,
     heroText: str(form, "heroText") || null,
     active: form.get("active") === "on",
+    providerSignup: form.get("providerSignup") === "on",
   };
   const country = str(form, "country");
   if (isCountry(country) && country !== b!.country) {

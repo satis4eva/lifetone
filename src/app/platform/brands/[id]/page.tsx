@@ -69,6 +69,7 @@ export default async function EditBrand({ params, searchParams }: { params: { id
         <h2 className="full">Business</h2>
         <label>Platform fee (% of brand revenue)<input name="platformFeePct" type="number" min={0} max={50} step={0.5} defaultValue={Number(b.platformFeePct)} /></label>
         <label className="check" style={{ alignSelf: "end" }}><input type="checkbox" name="active" defaultChecked={b.active} /> Site is live (untick to switch it off)</label>
+        <label className="check full"><input type="checkbox" name="providerSignup" defaultChecked={b.providerSignup} /> Providers can sign up on this site (untick for a brand that only sells its own services: hides the &quot;For providers&quot; link and turns the sign-up page off)</label>
         <div className="full"><button className="btn" type="submit">Save changes</button></div>
       </form>
 

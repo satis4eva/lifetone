@@ -43,7 +43,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/">Explore</Link>
                 <Link href="/quote">Get a quote</Link>
                 <Link href="/bookings">My bookings</Link>
-                <Link href="/providers/join">List your service</Link>
                 {user?.role === "BRAND_ADMIN" && <Link href="/portal">Client portal</Link>}
                 {user ? (
                   <>
@@ -71,7 +70,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <footer className="site">
           <div className="in">
             <span>© {brand.name} · {brand.domains.find(d => !d.includes("localhost")) ?? ""}</span>
-            <span>Licensed local providers · Secure payments · <a href="/providers/join">List your service</a></span>
+            <span>Licensed local providers · Secure payments{brand.providerSignup && (!user || user.role !== "GUEST") && <> · <a href="/providers/join">For providers</a></>}</span>
             <span>Powered by <a href="https://dbsgroup.io" target="_blank" rel="noopener">dbsgroup.io</a></span>
           </div>
         </footer>
